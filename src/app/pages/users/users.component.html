@@ -1,0 +1,182 @@
+<div class="p-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Utilisateurs</h1>
+      <p class="text-gray-500 text-sm mt-1">Gestion des candidats et administrateurs</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+        {{ total }} utilisateurs
+      </span>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <mat-card class="cardWithShadow mb-6">
+    <mat-card-content class="p-4">
+      <div class="flex items-center gap-4">
+        <mat-form-field appearance="outline" class="w-48">
+          <mat-label>Rôle</mat-label>
+          <mat-select [(ngModel)]="selectedRole" (selectionChange)="onRoleChange()">
+            <mat-option *ngFor="let role of roles" [value]="role.value">
+              {{ role.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <button mat-stroked-button color="primary" (click)="loadUsers()">
+          Actualiser
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Tableau -->
+  <mat-card class="cardWithShadow">
+    <mat-card-content>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="flex justify-center py-10">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <!-- Table -->
+      <div *ngIf="!loading" class="overflow-x-auto">
+        <table mat-table [dataSource]="users" class="w-full">
+
+          <!-- UniqueId -->
+          <ng-container matColumnDef="uniqueId">
+  <th mat-header-cell *matHeaderCellDef class="font-semibold">ID</th>
+  <td mat-cell *matCellDef="let user">
+    <div class="flex items-center">
+      <span class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded cursor-help"
+            [matTooltip]="user.id"
+            matTooltipPosition="above">
+        {{ user.id | slice:0:6 }}...{{ user.id | slice:-4 }}
+      </span>
+    </div>
+  </td>
+</ng-container>
+          <!-- Nom -->
+          <ng-container matColumnDef="nom">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Candidat</th>
+            <td mat-cell *matCellDef="let user">
+              <div class="flex items-center gap-3 py-2">
+                <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span class="text-blue-700 font-bold text-sm">
+                    {{ user.nom?.charAt(0)?.toUpperCase() }}
+                  </span>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-800">{{ user.nom }} {{ user.prenom }}</div>
+                  <div class="text-xs text-gray-500">{{ user.numeroTel }}</div>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Email -->
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Email</th>
+            <td mat-cell *matCellDef="let user">
+              <span class="text-sm text-gray-700">{{ user.email }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Role -->
+          <ng-container matColumnDef="role">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Rôle</th>
+            <td mat-cell *matCellDef="let user">
+              <span class="px-2 py-1 rounded-full text-xs font-medium"
+                [ngClass]="{
+                  'bg-purple-100 text-purple-700': user.role === 'admin',
+                  'bg-blue-100 text-blue-700': user.role === 'candidat',
+                  'bg-green-100 text-green-700': user.role === 'company'
+                }">
+                {{ getRoleLabel(user.role) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Pays -->
+          <ng-container matColumnDef="pays">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Pays</th>
+            <td mat-cell *matCellDef="let user">
+              <span class="text-sm">{{ user.pays?.label || '—' }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Statut vérification -->
+          <ng-container matColumnDef="candidateVerificationStatus">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Statut</th>
+            <td mat-cell *matCellDef="let user">
+              
+              <span *ngIf="user.role !== 'admin'" class="px-2 py-1 rounded-full text-xs font-medium"
+                [ngClass]="{
+                  'bg-green-100 text-green-700': user.candidateVerificationStatus === 'verified',
+                  'bg-yellow-100 text-yellow-700': user.candidateVerificationStatus === 'pending',
+                  'bg-red-100 text-red-700': user.candidateVerificationStatus === 'rejected'
+                }">
+                {{ getStatusLabel(user.candidateVerificationStatus) }}
+              </span>
+
+              <span *ngIf="user.role === 'admin'" class="text-gray-400 font-medium">—</span>
+
+            </td>
+          </ng-container>
+
+          <!-- Date création -->
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Créé le</th>
+            <td mat-cell *matCellDef="let user">
+              <span class="text-sm text-gray-600">
+                {{ user.createdAt | date:'dd/MM/yyyy' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Actions -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Actions</th>
+            <td mat-cell *matCellDef="let user">
+              <div class="flex items-center gap-1">
+                <button mat-icon-button color="primary"
+                  [routerLink]="['/users', user.id]"
+                  matTooltip="Voir détails">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button mat-icon-button color="warn"
+                  (click)="deleteUser(user._id)"
+                  matTooltip="Supprimer">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+            class="hover:bg-gray-50 transition-colors"></tr>
+
+          <!-- Aucun résultat -->
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell text-center py-8 text-gray-500" [attr.colspan]="displayedColumns.length">
+              Aucun utilisateur trouvé
+            </td>
+          </tr>
+        </table>
+
+        <!-- Pagination -->
+        <mat-paginator
+          [length]="total"
+          [pageSize]="limit"
+          [pageSizeOptions]="[5, 10, 25, 50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons>
+        </mat-paginator>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+</div>

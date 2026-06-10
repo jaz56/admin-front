@@ -1,0 +1,164 @@
+<div class="p-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Demandes</h1>
+      <p class="text-gray-500 text-sm mt-1">Gestion des dossiers de candidature</p>
+    </div>
+    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+      {{ total }} demandes
+    </span>
+  </div>
+
+  <!-- Filtres -->
+  <mat-card class="cardWithShadow mb-6">
+    <mat-card-content class="p-4">
+      <div class="flex items-center gap-4">
+        <mat-form-field appearance="outline" class="w-52">
+          <mat-label>Statut</mat-label>
+          <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onStatusChange()">
+            <mat-option *ngFor="let s of statuts" [value]="s.value">
+              {{ s.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <button mat-stroked-button color="primary" (click)="loadDemandes()">
+          Actualiser
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Tableau -->
+  <mat-card class="cardWithShadow">
+    <mat-card-content>
+
+      <div *ngIf="loading" class="flex justify-center py-10">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+
+      <div *ngIf="!loading" class="overflow-x-auto">
+        <table mat-table [dataSource]="demandes" class="w-full">
+
+          <!-- UniqueId -->
+          <ng-container matColumnDef="uniqueId">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">ID</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="text-xs font-mono text-gray-500">{{ d.uniqueId }}</span>
+            </td>
+          </ng-container>
+
+          <!-- User -->
+          
+            <ng-container matColumnDef="user">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Candidat</th>
+            <td mat-cell *matCellDef="let d">
+              <span *ngIf="d.candidatNom || d.candidatPrenom" class="text-sm font-semibold text-gray-800 capitalize">
+                {{ d.candidatPrenom }} {{ d.candidatNom }}
+              </span>
+              <span *ngIf="!d.candidatNom && !d.candidatPrenom" class="text-sm text-gray-400 italic">
+                Candidat inconnu
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Type -->
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Type</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                {{ d.type }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Status -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Statut</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="px-2 py-1 rounded-full text-xs font-medium"
+                [ngClass]="getStatusColor(d.status)">
+                {{ getStatusLabel(d.status) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Destination -->
+          <ng-container matColumnDef="journeesDestination">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Destination</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="text-sm text-gray-700">{{ d.journeesDestination || '—' }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Niveau étude -->
+          <ng-container matColumnDef="niveauEtude">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Niveau</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="text-sm text-gray-700">{{ d.niveauEtude || '—' }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Date -->
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Créé le</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="text-sm text-gray-600">
+                {{ d.createdAt | date:'dd/MM/yyyy' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Actions -->
+          <ng-container matColumnDef="actions">
+  <th mat-header-cell *matHeaderCellDef class="font-semibold">Actions</th>
+  <td mat-cell *matCellDef="let d">
+    <div class="flex items-center gap-1">
+      <button mat-icon-button color="primary"
+        [routerLink]="['/demandes', d.id]" matTooltip="Voir détails">
+        <mat-icon>visibility</mat-icon>
+      </button>
+                <!-- Changer statut -->
+                <button mat-icon-button [matMenuTriggerFor]="statusMenu"
+        matTooltip="Changer statut">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <mat-menu #statusMenu="matMenu">
+        <button mat-menu-item *ngFor="let s of statuts.slice(1)"
+          (click)="updateStatus(d.id, s.value)"> {{ s.label }}
+        </button>
+      </mat-menu>
+
+                <button mat-icon-button color="warn"
+        (click)="deleteDemande(d.id)" matTooltip="Supprimer">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  </td>
+</ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+            class="hover:bg-gray-50 transition-colors"></tr>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell text-center py-8 text-gray-500"
+              [attr.colspan]="displayedColumns.length">
+              Aucune demande trouvée
+            </td>
+          </tr>
+        </table>
+
+        <mat-paginator
+          [length]="total"
+          [pageSize]="limit"
+          [pageSizeOptions]="[5, 10, 25, 50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons>
+        </mat-paginator>
+      </div>
+
+    </mat-card-content>
+  </mat-card>
+</div>

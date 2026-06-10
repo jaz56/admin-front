@@ -1,0 +1,90 @@
+<div class="flex h-screen w-full items-center justify-center overflow-hidden p-2">
+  <mat-card class="cardWithShadow overflow-hidden auth-card mx-auto mb-0">
+    <div class="grid grid-cols-12 gap-6">
+
+      <!-- Formulaire -->
+      <div class="lg:col-span-6 col-span-12 flex items-stretch">
+        <div class="w-full p-10 flex flex-col justify-center">
+
+          <!-- Titre -->
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Plateforme Admin</h2>
+            <p class="text-gray-500 text-sm mt-1">Connectez-vous à votre espace administrateur</p>
+          </div>
+
+          <!-- Message erreur -->
+          <div *ngIf="errorMessage"
+            class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded mb-4 text-sm">
+            {{ errorMessage }}
+          </div>
+
+          <form [formGroup]="form" (ngSubmit)="submit()">
+
+            <!-- Email -->
+            <mat-label class="mat-subtitle-2 text-sm font-semibold mb-2 block text-start">
+              Adresse Email
+            </mat-label>
+            <mat-form-field appearance="outline" class="w-full" color="primary">
+              <input matInput formControlName="email" type="email" placeholder="admin@example.com" />
+              <mat-error *ngIf="f['email'].hasError('required')">Email obligatoire</mat-error>
+              <mat-error *ngIf="f['email'].hasError('email')">Email invalide</mat-error>
+            </mat-form-field>
+
+            <!-- Password -->
+            <mat-label class="mat-subtitle-2 text-sm font-semibold mb-2 block text-start">
+  Mot de passe
+</mat-label>
+<mat-form-field appearance="outline" class="w-full" color="primary">
+  <input 
+    matInput 
+    formControlName="password" 
+    [type]="passwordVisible ? 'text' : 'password'" 
+    placeholder="••••••••" 
+  />
+  
+  <button 
+    mat-icon-button 
+    matSuffix 
+    type="button" 
+    (click)="passwordVisible = !passwordVisible"
+    class="text-gray-500">
+    <mat-icon>{{ passwordVisible ? 'visibility' : 'visibility_off' }}</mat-icon>
+  </button>
+
+  <mat-error *ngIf="f['password'].hasError('required')">Mot de passe obligatoire</mat-error>
+</mat-form-field>
+
+            <!-- Bouton connexion -->
+            <button
+              mat-flat-button
+              color="primary"
+              class="w-full mt-2"
+              type="submit"
+              [disabled]="loading || form.invalid">
+              <span *ngIf="!loading">Se connecter</span>
+              <span *ngIf="loading">Connexion en cours...</span>
+            </button>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- Image côté droit -->
+      <div class="lg:col-span-6 col-span-12 relative hidden lg:flex justify-center items-stretch bg-light p-5">
+        <div class="flex flex-col items-center justify-center w-full gap-4">
+          <img src="/assets/images/backgrounds/login-bg.svg"
+            alt="login"
+            class="img-fluid object-cover" />
+          <div class="text-center">
+            <h3 class="text-xl font-bold text-gray-700">Gestion des Candidats</h3>
+            <p class="text-gray-500 text-sm mt-2">
+              Plateforme d'administration pour gérer les demandes,
+              bookings et candidatures internationales.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </mat-card>
+</div>

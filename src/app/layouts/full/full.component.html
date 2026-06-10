@@ -1,0 +1,47 @@
+<div class="blue_theme light-theme" dir="ltr">
+  <mat-sidenav-container class="mainWrapper" autosize autoFocus>
+
+    <!-- Sidebar -->
+    <mat-sidenav #leftsidenav [mode]="isOver ? 'over' : 'side'" [opened]="!isOver"
+      (openedChange)="onSidenavOpenedChange($event)"
+      (closedStart)="onSidenavClosedStart()"
+      class="sidebarNav">
+      <div class="flex-layout">
+        <app-sidebar (toggleMobileNav)="sidenav.toggle()"
+          [showToggle]="isOver">
+        </app-sidebar>
+        <ng-scrollbar class="relative" style="height: 100%">
+          <mat-nav-list class="sidebar-list">
+            @for(item of navItems; track item) {
+              <app-nav-item [item]="item"
+                (notify)="sidenav.toggle()"
+                class="top-parent">
+              </app-nav-item>
+            }
+          </mat-nav-list>
+        </ng-scrollbar>
+      </div>
+    </mat-sidenav>
+
+    <!-- Contenu principal -->
+    <mat-sidenav-content class="contentWrapper" #content>
+
+      <app-header
+        [showToggle]="!isOver"
+        (toggleCollapsed)="toggleCollapsed()"
+        (toggleMobileNav)="sidenav.toggle()">
+      </app-header>
+
+      <main class="pageWrapper maxWidth">
+        <router-outlet></router-outlet>
+      </main>
+
+      <!-- Footer -->
+      <footer class="text-center text-muted pt-2.5 pb-6 text-sm text-gray-400">
+        Plateforme Administration — Immigration &amp; Mobilité Internationale
+      </footer>
+
+    </mat-sidenav-content>
+
+  </mat-sidenav-container>
+</div>

@@ -1,0 +1,121 @@
+<mat-toolbar class="topbar gap-2">
+
+  <!-- Toggle sidebar mobile -->
+  @if(!showToggle) {
+  <button mat-icon-button (click)="toggleMobileNav.emit()">
+    <i class="iconify flex" data-icon="solar:hamburger-menu-linear"></i>
+  </button>
+  }
+
+  <!-- Toggle sidebar desktop -->
+  @if(showToggle) {
+  <button mat-icon-button (click)="toggleCollapsed.emit()">
+    <i class="iconify flex" data-icon="solar:hamburger-menu-linear"></i>
+  </button>
+  }
+
+  <span class="flex-auto"></span>
+
+  <!-- Nom plateforme -->
+  <span class="text-sm font-semibold text-gray-500 hidden md:block mr-4">
+    Plateforme Admin — Immigration
+  </span>
+
+  <!-- Profil dropdown -->
+  <button [matMenuTriggerFor]="profilemenu"
+    style="background: none; border: none; cursor: pointer; padding: 0;"
+    class="flex items-center gap-2">
+
+    <!-- Avatar -->
+    <div class="w-9 h-9 rounded-full bg-blue-600 flex items-center
+      justify-center flex-shrink-0">
+      <span class="text-white font-bold text-sm">
+        {{ currentUser?.nom?.charAt(0)?.toUpperCase() || 'A' }}
+      </span>
+    </div>
+
+    <!-- Nom + rôle -->
+    <div class="hidden md:flex flex-col items-start">
+      <span class="text-sm font-semibold text-gray-800 leading-tight">
+        {{ currentUser?.nom }} {{ currentUser?.prenom }}
+      </span>
+      <span class="text-xs text-gray-400 leading-tight capitalize">
+        {{ currentUser?.role }}
+      </span>
+    </div>
+
+    <!-- Flèche -->
+    <i data-icon="solar:alt-arrow-down-linear"
+      class="iconify text-gray-400 flex-shrink-0"
+      style="font-size: 16px; width: 16px; height: 16px;">
+    </i>
+
+  </button>
+
+  <!-- Menu profil -->
+  <mat-menu #profilemenu="matMenu" xPosition="before">
+    <div class="px-4 py-3 border-b border-gray-100" style="min-width: 220px;">
+
+      <!-- Avatar + infos -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center
+          justify-center flex-shrink-0">
+          <span class="text-white font-bold">
+            {{ currentUser?.nom?.charAt(0)?.toUpperCase() || 'A' }}
+          </span>
+        </div>
+        <div>
+          <p class="text-sm font-bold text-gray-800 m-0">
+            {{ currentUser?.nom }} {{ currentUser?.prenom }}
+          </p>
+          <p class="text-xs text-gray-500 m-0">{{ currentUser?.email }}</p>
+        </div>
+      </div>
+
+      <!-- Badge rôle -->
+      <div class="mt-2">
+        <span class="px-2 py-0.5 rounded-full text-xs font-medium
+          bg-blue-100 text-blue-700 capitalize">
+          {{ currentUser?.role }}
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Profil rapide -->
+    <div class="px-3 pt-2">
+      <a routerLink="/profile"
+        class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl
+          bg-gray-50 hover:bg-blue-50 border border-gray-200
+          hover:border-blue-200 transition-all cursor-pointer text-gray-700
+          hover:text-blue-600 no-underline">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600
+          to-indigo-700 flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-xs font-bold">
+            {{ currentUser?.nom?.charAt(0)?.toUpperCase() || 'A' }}
+          </span>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-semibold m-0 leading-tight">Mon profil</p>
+          <p class="text-xs text-gray-400 m-0">Paramètres du compte</p>
+        </div>
+        <mat-icon class="text-gray-300 text-base">chevron_right</mat-icon>
+      </a>
+    </div>
+
+    <div class="px-3 py-2">
+      <button (click)="logout()"
+        class="w-full flex items-center justify-center gap-2 px-4 py-2
+          rounded-lg border border-red-200 text-red-600 text-sm font-medium
+          hover:bg-red-50 transition-colors cursor-pointer bg-white">
+        <i data-icon="solar:logout-line-duotone"
+          class="iconify flex-shrink-0"
+          style="font-size: 18px; width: 18px; height: 18px;">
+        </i>
+        Se déconnecter
+      </button>
+    </div>
+
+  </mat-menu>
+
+</mat-toolbar>

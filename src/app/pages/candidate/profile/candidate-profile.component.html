@@ -1,0 +1,293 @@
+<div class="space-y-6">
+
+  <div *ngIf="loading" class="flex justify-center py-20">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div *ngIf="!loading" class="grid grid-cols-12 gap-6">
+
+    <div class="col-span-12 lg:col-span-4 space-y-6">
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+        <div class="h-24 w-full"
+          style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);">
+        </div>
+
+        <div class="p-5 -mt-12 text-center">
+          <div class="w-20 h-20 rounded-full border-4 border-white shadow-lg
+            bg-gradient-to-br from-blue-500 to-indigo-600
+            flex items-center justify-center mx-auto mb-3">
+            <span class="text-white text-2xl font-bold">{{ getInitials() }}</span>
+          </div>
+
+          <h2 class="text-xl font-bold text-gray-800">
+            {{ profile?.nom }} {{ profile?.prenom }}
+          </h2>
+          <p class="text-gray-500 text-sm">{{ profile?.email }}</p>
+          <span class="mt-2 inline-block px-3 py-1 rounded-full text-xs
+            font-semibold bg-blue-100 text-blue-700">
+            Candidat
+          </span>
+
+          <div class="mt-4 bg-gray-50 rounded-xl p-3">
+            <p class="text-2xl font-bold text-gray-800 font-mono">
+              {{ currentTime | date:'HH:mm:ss' }}
+            </p>
+            <p class="text-xs text-gray-400">
+              {{ currentTime | date:'EEEE d MMMM yyyy' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <h3 class="text-sm font-bold text-gray-700 mb-3">
+          Complétion du profil
+        </h3>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="flex-1 h-3 bg-gray-200 rounded-full">
+            <div class="h-3 rounded-full transition-all duration-500"
+              [ngClass]="getCompletionColor()"
+              [style.width.%]="getCompletionPercentage()">
+            </div>
+          </div>
+          <span class="text-sm font-bold text-gray-700">
+            {{ getCompletionPercentage() }}%
+          </span>
+        </div>
+        <p class="text-xs text-gray-400">
+          {{ getCompletionPercentage() < 100
+            ? 'Complétez votre profil pour améliorer vos chances'
+            : 'Profil complet !' }}
+        </p>
+      </div>
+
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <h3 class="text-sm font-bold text-gray-700 mb-3">Informations</h3>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3 text-sm">
+            <mat-icon class="text-gray-400 text-base!">phone</mat-icon>
+            <span class="text-gray-600">{{ profile?.numeroTel || '—' }}</span>
+          </div>
+          <div class="flex items-center gap-3 text-sm">
+            <mat-icon class="text-gray-400 text-base!">location_on</mat-icon>
+            <span class="text-gray-600">
+              {{ profile?.pays?.label || '—' }}
+            </span>
+          </div>
+          <div class="flex items-center gap-3 text-sm">
+            <mat-icon class="text-gray-400 text-base!">work</mat-icon>
+            <span class="text-gray-600">{{ profile?.fonction || '—' }}</span>
+          </div>
+          <div class="flex items-center gap-3 text-sm">
+            <mat-icon class="text-gray-400 text-base!">translate</mat-icon>
+            <span class="text-gray-600">
+              {{ profile?.langueDeProcedure || '—' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <button (click)="logout()"
+          class="w-full flex items-center justify-center gap-2 px-4 py-3
+            rounded-xl border-2 border-red-200 text-red-600 font-medium
+            hover:bg-red-50 transition-all cursor-pointer bg-white">
+          <mat-icon>logout</mat-icon>
+          Se déconnecter
+        </button>
+      </div>
+
+    </div>
+
+    <div class="col-span-12 lg:col-span-8">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <mat-tab-group [(selectedIndex)]="activeTab">
+
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon class="mr-2">person</mat-icon>
+              Informations
+            </ng-template>
+            <div class="p-6">
+              <h2 class="text-lg font-bold text-gray-800 mb-1">
+                Informations personnelles
+              </h2>
+              <p class="text-sm text-gray-400 mb-6">
+                Modifiez vos coordonnées et informations de contact
+              </p>
+
+              <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Nom
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full bg-gray-50 rounded-lg">
+                      <input matInput formControlName="nom"/>
+                      <mat-hint class="text-gray-400 text-xs">Modifiable uniquement via le tribunal</mat-hint>
+                    </mat-form-field>
+                  </div>
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Prénom
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full bg-gray-50 rounded-lg">
+                      <input matInput formControlName="prenom"/>
+                      <mat-hint class="text-gray-400 text-xs">Modifiable uniquement via le tribunal</mat-hint>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="sm:col-span-2">
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Email
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <input matInput formControlName="email" type="email"/>
+                    </mat-form-field>
+                  </div>
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Téléphone
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <input matInput formControlName="numeroTel"
+                        placeholder="+216 XX XXX XXX"/>
+                    </mat-form-field>
+                  </div>
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Code postal
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <input matInput formControlName="codePostal"/>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="sm:col-span-2">
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Adresse
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <input matInput formControlName="address"/>
+                    </mat-form-field>
+                  </div>
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Fonction
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <input matInput formControlName="fonction"/>
+                    </mat-form-field>
+                  </div>
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Langue de procédure
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <mat-select formControlName="langueDeProcedure">
+                        <mat-option value="french">Français</mat-option>
+                        <mat-option value="arabic">Arabe</mat-option>
+                        <mat-option value="english">Anglais</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+
+                </div>
+
+                <div class="flex justify-end mt-4">
+                  <button mat-flat-button color="primary" type="submit"
+                    [disabled]="profileForm.invalid">
+                    <mat-icon>save</mat-icon>
+                    Sauvegarder
+                  </button>
+                </div>
+              </form>
+            </div>
+          </mat-tab>
+
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon class="mr-2">lock</mat-icon>
+              Sécurité
+            </ng-template>
+            <div class="p-6">
+              <h2 class="text-lg font-bold text-gray-800 mb-1">
+                Changer le mot de passe
+              </h2>
+              <p class="text-sm text-gray-400 mb-6">
+                Utilisez un mot de passe fort d'au moins 8 caractères
+              </p>
+
+              <form [formGroup]="passwordForm" (ngSubmit)="savePassword()">
+                <div class="space-y-4">
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Mot de passe actuel
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <input matInput formControlName="currentPassword"
+                        [type]="passwordVisible ? 'text' : 'password'"/>
+                      <button mat-icon-button matSuffix type="button"
+                        (click)="passwordVisible = !passwordVisible">
+                        <mat-icon>
+                          {{ passwordVisible ? 'visibility_off' : 'visibility' }}
+                        </mat-icon>
+                      </button>
+                    </mat-form-field>
+                  </div>
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Nouveau mot de passe
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <input matInput formControlName="newPassword"
+                        [type]="newPasswordVisible ? 'text' : 'password'"/>
+                      <button mat-icon-button matSuffix type="button"
+                        (click)="newPasswordVisible = !newPasswordVisible">
+                        <mat-icon>
+                          {{ newPasswordVisible ? 'visibility_off' : 'visibility' }}
+                        </mat-icon>
+                      </button>
+                      <mat-error>Minimum 8 caractères</mat-error>
+                    </mat-form-field>
+                  </div>
+
+                  <div>
+                    <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                      Confirmer le mot de passe
+                    </mat-label>
+                    <mat-form-field appearance="outline" class="w-full">
+                      <input matInput formControlName="confirmPassword"
+                        type="password"/>
+                    </mat-form-field>
+                  </div>
+
+                </div>
+
+                <div class="flex justify-end mt-4">
+                  <button mat-flat-button color="primary" type="submit"
+                    [disabled]="passwordForm.invalid">
+                    <mat-icon>lock_reset</mat-icon>
+                    Mettre à jour
+                  </button>
+                </div>
+              </form>
+            </div>
+          </mat-tab>
+
+        </mat-tab-group>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,140 @@
+<div class="p-6">
+  <button mat-stroked-button routerLink="/users" class="mb-6">
+    <mat-icon>arrow_back</mat-icon> Retour à la liste
+  </button>
+
+  <div *ngIf="loading" class="flex justify-center py-10">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <div *ngIf="!loading && user" class="flex flex-col gap-6">
+
+    <mat-card class="cardWithShadow">
+      <mat-card-content class="flex flex-wrap items-center gap-6 p-6">
+        <img [src]="user.photoDeProfile || 'assets/images/profile/user-1.jpg'" 
+             alt="Photo de profil" 
+             class="w-24 h-24 rounded-full object-cover shadow-sm border border-gray-200">
+        
+        <div class="flex-1 min-w-[250px]">
+          <h1 class="text-3xl font-bold text-gray-800 mb-1 capitalize">{{ user.prenom }} {{ user.nom }}</h1>
+          <p class="text-gray-500 font-mono text-sm mb-2">ID Système : {{ user.id }}</p>
+          
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full uppercase">
+              ID Unique: {{ user.uniqueId || 'Non généré' }}
+            </span>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full uppercase"
+                  [ngClass]="{
+                    'bg-yellow-100 text-yellow-800': user.candidateVerificationStatus === 'pending',
+                    'bg-green-100 text-green-800': user.candidateVerificationStatus === 'verified',
+                    'bg-red-100 text-red-800': user.candidateVerificationStatus === 'rejected'
+                  }">
+              Statut : {{ user.candidateVerificationStatus || 'En attente' }}
+            </span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <mat-card class="cardWithShadow">
+        <mat-card-header class="mb-3">
+          <mat-card-title class="text-lg font-semibold text-gray-700">Informations Personnelles</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul class="space-y-3 text-sm text-gray-600">
+            <li><strong>Email :</strong> <a href="mailto:{{ user.email }}" class="text-blue-600 hover:underline">{{ user.email }}</a></li>
+            <li><strong>Téléphone :</strong> {{ user.numeroTel || 'Non renseigné' }}</li>
+            <li><strong>Sexe :</strong> {{ user.sexe === 'H' ? 'Homme' : (user.sexe === 'F' ? 'Femme' : 'Non spécifié') }}</li>
+            <li><strong>Date de naissance :</strong> {{( user.dateDeNaissance | date:'dd/MM/yyyy' )|| 'Non renseignée' }}</li>
+            <li><strong>Pays d'origine :</strong> {{ user.pays?.label || 'Non renseigné' }}</li>
+            <li><strong>Adresse postale :</strong> {{ user.address || 'Non renseignée' }} (CP: {{ user.codePostal || 'N/A' }})</li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="cardWithShadow">
+        <mat-card-header class="mb-3">
+          <mat-card-title class="text-lg font-semibold text-gray-700">Profil Professionnel & Suivi</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul class="space-y-3 text-sm text-gray-600 mb-4">
+            <li><strong>Dernier poste occupé :</strong> <span class="capitalize font-medium text-gray-800">{{ user.dernierePosteOccupe || 'Non renseigné' }}</span></li>
+            <li><strong>Fonction ciblée :</strong> <span class="capitalize font-medium text-gray-800">{{ user.fonction || 'Non renseignée' }}</span></li>
+            <li><strong>Intéressé par :</strong> {{ user.interessesPar?.join(', ') || 'Non spécifié' }}</li>
+            <li><strong>Langue sélectionnée :</strong> <span class="capitalize">{{ user.langueDeProcedure || 'Français' }}</span></li>
+            <li><strong>Étape d'inscription :</strong> <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs">{{ user.progress }}</span></li>
+          </ul>
+          
+          <hr class="my-4 border-gray-100">
+          
+          <div class="flex gap-4">
+            <div class="bg-gray-50 p-3 rounded-lg flex-1 border border-gray-200">
+              <span class="block text-gray-500 text-xs uppercase font-medium">Solde Compte</span>
+              <strong class="text-lg text-gray-800">{{ user.balance || 0 }} DT</strong>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg flex-1 border border-gray-200">
+              <span class="block text-gray-500 text-xs uppercase font-medium">Cashback</span>
+              <strong class="text-lg text-gray-800">{{ user.cashback || 0 }} DT</strong>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <mat-card class="cardWithShadow">
+      <mat-card-header class="mb-4">
+        <mat-card-title class="text-lg font-semibold text-gray-700">Documents d'identité & Justificatifs</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <div>
+            <h4 class="font-medium text-sm text-gray-700 mb-3 flex items-center gap-2">
+              <mat-icon class="text-gray-500">badge</mat-icon> 
+              Cartes d'Identité Nationales (Numéro : {{ user.pieceIdentite || 'Non renseigné' }})
+            </h4>
+            <div class="flex gap-4">
+              <div class="flex-1">
+                <span class="text-xs text-gray-500 block mb-1 font-medium">Recto</span>
+                <img *ngIf="user.cinRecto" [src]="user.cinRecto" alt="CIN Recto" class="w-full h-36 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform cursor-zoom-in">
+                <div *ngIf="!user.cinRecto" class="w-full h-36 bg-gray-50 flex items-center justify-center text-gray-400 text-xs border border-dashed rounded-lg">Absent</div>
+              </div>
+              <div class="flex-1">
+                <span class="text-xs text-gray-500 block mb-1 font-medium">Verso</span>
+                <img *ngIf="user.cinVerso" [src]="user.cinVerso" alt="CIN Verso" class="w-full h-36 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform cursor-zoom-in">
+                <div *ngIf="!user.cinVerso" class="w-full h-36 bg-gray-50 flex items-center justify-center text-gray-400 text-xs border border-dashed rounded-lg">Absent</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-medium text-sm text-gray-700 mb-3 flex items-center gap-2">
+              <mat-icon class="text-gray-500">audiotrack</mat-icon> Échantillon Vocal de Présentation
+            </h4>
+            
+            <div class="pt-5">
+              <div *ngIf="user.vocal" class="bg-slate-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center h-36">
+                <mat-icon class="text-blue-500 text-3xl mb-2">mic</mat-icon>
+                <audio controls class="w-full max-w-[280px]">
+                  <source [src]="user.vocal" type="audio/wav">
+                  Votre navigateur ne prend pas en charge l'écoute audio.
+                </audio>
+              </div>
+              <div *ngIf="!user.vocal" class="bg-gray-50 h-36 rounded-lg border border-dashed flex items-center justify-center text-gray-400 text-sm">
+                Aucune piste vocale déposée par le candidat.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  <div *ngIf="!loading && !user" class="text-center py-10 text-red-500 font-medium">
+    <mat-icon class="align-middle mr-2">error</mat-icon> Impossible de charger les détails de ce candidat.
+  </div>
+</div>

@@ -1,0 +1,554 @@
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+        <mat-icon class="text-blue-600 text-2xl!">description</mat-icon>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-gray-800 m-0">Mon Dossier de Candidature</h1>
+        <p class="text-gray-500 text-sm m-0 mt-1">
+          Complétez toutes les étapes pour soumettre votre dossier d'immigration
+        </p>
+      </div>
+      <!-- Badge si dossier existant -->
+      <div *ngIf="existingDemande" class="ml-auto">
+        <span class="px-3 py-1.5 rounded-full text-sm font-semibold
+          bg-green-100 text-green-700 flex items-center gap-1">
+          <mat-icon class="text-sm! w-4! h-4!">check_circle</mat-icon>
+          Dossier soumis
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="flex justify-center py-20">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <!-- Stepper -->
+  <div *ngIf="!loading" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <mat-stepper #stepper linear="false" orientation="horizontal"
+      class="candidate-stepper">
+
+      <!-- ── Étape 1 : Informations générales ── -->
+      <mat-step [stepControl]="step1Form" label="Informations générales">
+        <ng-template matStepLabel>
+          <span class="hidden sm:inline">Informations générales</span>
+          <span class="sm:hidden">Infos</span>
+        </ng-template>
+
+        <div class="p-6">
+          <h2 class="text-lg font-bold text-gray-800 mb-1">
+            Informations générales
+          </h2>
+          <p class="text-sm text-gray-400 mb-6">
+            Renseignez le type et la destination de votre candidature
+          </p>
+
+          <form [formGroup]="step1Form">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              <!-- Type candidature -->
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Type de candidature *
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-select formControlName="type">
+                    <mat-option *ngFor="let t of typeOptions" [value]="t.value">
+                      {{ t.label }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <!-- Destination -->
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Destination *
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-select formControlName="journeesDestination">
+                    <mat-option *ngFor="let d of destinationOptions" [value]="d.value">
+                      {{ d.label }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <!-- Pays résidence -->
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Pays de résidence *
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <input matInput formControlName="paysResidenceLabel"
+                    placeholder="Ex: Tunisie"/>
+                </mat-form-field>
+              </div>
+
+              <!-- Code pays -->
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Code pays *
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <input matInput formControlName="paysResidenceValue"
+                    placeholder="Ex: TN" maxlength="2"/>
+                </mat-form-field>
+              </div>
+
+            </div>
+
+            <!-- Checkboxes -->
+            <div class="mt-4">
+              <p class="text-sm font-semibold text-gray-700 mb-3">
+                Informations complémentaires
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <mat-checkbox formControlName="besoinVisa" color="primary">
+                  J'ai besoin d'un visa
+                </mat-checkbox>
+                <mat-checkbox formControlName="typeHebergement" color="primary">
+                  J'ai besoin d'un hébergement
+                </mat-checkbox>
+                <mat-checkbox formControlName="existenceDeGarant" color="primary">
+                  J'ai un garant
+                </mat-checkbox>
+                <mat-checkbox formControlName="ouverteTouteOpportunites" color="primary">
+                  Ouvert à toutes les opportunités
+                </mat-checkbox>
+                <mat-checkbox formControlName="maladieContagieuse" color="warn">
+                  Maladie contagieuse déclarée
+                </mat-checkbox>
+                <mat-checkbox formControlName="handicape" color="primary">
+                  Situation de handicap
+                </mat-checkbox>
+              </div>
+            </div>
+
+          </form>
+
+          <div class="flex justify-end mt-6">
+            <button mat-flat-button color="primary" matStepperNext
+              [disabled]="step1Form.invalid">
+              Continuer
+              <mat-icon>arrow_forward</mat-icon>
+            </button>
+          </div>
+        </div>
+      </mat-step>
+
+      <!-- ── Étape 2 : Parcours professionnel ── -->
+      <mat-step [stepControl]="step2Form" label="Parcours professionnel">
+        <ng-template matStepLabel>
+          <span class="hidden sm:inline">Parcours professionnel</span>
+          <span class="sm:hidden">Parcours</span>
+        </ng-template>
+
+        <div class="p-6">
+          <h2 class="text-lg font-bold text-gray-800 mb-1">
+            Parcours professionnel
+          </h2>
+          <p class="text-sm text-gray-400 mb-6">
+            Décrivez votre formation et expérience professionnelle
+          </p>
+
+          <form [formGroup]="step2Form">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Niveau d'études *
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-select formControlName="niveauEtude">
+                    <mat-option *ngFor="let n of niveauEtudeOptions" [value]="n">
+                      {{ n }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Années d'études
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <input matInput type="number" formControlName="nombreAnneesEtude"/>
+                </mat-form-field>
+              </div>
+
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Statut actuel *
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-select formControlName="condidatStatutActuel">
+                    <mat-option *ngFor="let s of statutOptions" [value]="s.value">
+                      {{ s.label }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Fonction *
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-select formControlName="fonction">
+                    <mat-option *ngFor="let f of fonctionOptions" [value]="f">
+                      {{ f }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Années d'expérience
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-select formControlName="nombreAnneesExperience">
+                    <mat-option *ngFor="let e of experienceOptions" [value]="e">
+                      {{ e }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Poste souhaité *
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <input matInput formControlName="posteSouhaite"
+                    placeholder="Ex: Développeur Full Stack"/>
+                </mat-form-field>
+              </div>
+
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Dernier poste occupé
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <input matInput formControlName="dernierPosteOccupe"/>
+                </mat-form-field>
+              </div>
+
+              <div>
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Mois de stage
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <input matInput type="number" formControlName="nombreMoisStage"/>
+                </mat-form-field>
+              </div>
+
+              <div class="sm:col-span-2">
+                <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  Activité / Secteur
+                </mat-label>
+                <mat-form-field appearance="outline" class="w-full">
+                  <input matInput formControlName="activite"
+                    placeholder="Ex: Informatique, BTP, Santé..."/>
+                </mat-form-field>
+              </div>
+
+            </div>
+          </form>
+
+          <div class="flex justify-between mt-6">
+            <button mat-stroked-button matStepperPrevious>
+              <mat-icon>arrow_back</mat-icon>
+              Retour
+            </button>
+            <button mat-flat-button color="primary" matStepperNext
+              [disabled]="step2Form.invalid">
+              Continuer
+              <mat-icon>arrow_forward</mat-icon>
+            </button>
+          </div>
+        </div>
+      </mat-step>
+
+      <!-- ── Étape 3 : Langues & Diplômes ── -->
+      <mat-step label="Langues et Diplômes">
+        <ng-template matStepLabel>
+          <span class="hidden sm:inline">Langues & Diplômes</span>
+          <span class="sm:hidden">Langues</span>
+        </ng-template>
+
+        <div class="p-6">
+          <h2 class="text-lg font-bold text-gray-800 mb-1">
+            Langues & Diplômes
+          </h2>
+          <p class="text-sm text-gray-400 mb-6">
+            Ajoutez vos compétences linguistiques et diplômes obtenus
+          </p>
+
+          <form [formGroup]="step3Form">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+              <!-- Langues -->
+              <div class="bg-gray-50 rounded-xl p-4">
+                <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <mat-icon class="text-blue-500 text-base!">translate</mat-icon>
+                  Compétences linguistiques
+                </h3>
+
+                <div class="flex gap-2 mb-3">
+                  <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Langue</mat-label>
+                    <mat-select formControlName="langue">
+                      <mat-option *ngFor="let l of langueOptions" [value]="l">
+                        {{ l }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Niveau</mat-label>
+                    <mat-select formControlName="niveau">
+                      <mat-option *ngFor="let n of niveauLangueOptions" [value]="n">
+                        {{ n }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <button mat-icon-button color="primary" type="button"
+                    (click)="addLangue()" class="mt-1">
+                    <mat-icon>add_circle</mat-icon>
+                  </button>
+                </div>
+
+                <!-- Liste langues -->
+                <div class="space-y-2">
+                  <div *ngFor="let lang of langues; let i = index"
+                    class="flex items-center justify-between bg-white
+                      rounded-lg px-3 py-2 border border-gray-200">
+                    <div class="flex items-center gap-2">
+                      <mat-icon class="text-blue-400 text-base!">language</mat-icon>
+                      <span class="text-sm font-medium text-gray-800">
+                        {{ lang.langue }}
+                      </span>
+                      <span class="px-2 py-0.5 rounded-full text-xs
+                        bg-blue-100 text-blue-700">
+                        {{ lang.niveau }}
+                      </span>
+                    </div>
+                    <button mat-icon-button color="warn" (click)="removeLangue(i)"
+                      class="w-7! h-7!">
+                      <mat-icon class="text-sm!">close</mat-icon>
+                    </button>
+                  </div>
+                  <p *ngIf="langues.length === 0"
+                    class="text-xs text-gray-400 text-center py-2">
+                    Aucune langue ajoutée
+                  </p>
+                </div>
+              </div>
+
+              <!-- Diplômes -->
+              <div class="bg-gray-50 rounded-xl p-4">
+                <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                  <mat-icon class="text-purple-500 text-base!">school</mat-icon>
+                  Diplômes obtenus
+                </h3>
+
+                <div class="space-y-2 mb-3">
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Titre du diplôme</mat-label>
+                    <input matInput formControlName="titreDiplome"/>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Établissement</mat-label>
+                    <input matInput formControlName="etablissement"/>
+                  </mat-form-field>
+                  <div class="flex gap-2">
+                    <mat-form-field appearance="outline" class="flex-1">
+                      <mat-label>Date d'obtention</mat-label>
+                      <input matInput type="date" formControlName="dateDiplome"/>
+                    </mat-form-field>
+                    <button mat-icon-button color="primary" type="button"
+                      (click)="addDiplome()" class="mt-1">
+                      <mat-icon>add_circle</mat-icon>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Liste diplômes -->
+                <div class="space-y-2">
+                  <div *ngFor="let d of diplomes; let i = index"
+                    class="flex items-start justify-between bg-white
+                      rounded-lg px-3 py-2 border border-gray-200">
+                    <div class="flex items-start gap-2">
+                      <mat-icon class="text-purple-400 text-base! mt-0.5">
+                        workspace_premium
+                      </mat-icon>
+                      <div>
+                        <p class="text-sm font-medium text-gray-800 m-0">
+                          {{ d.titre }}
+                        </p>
+                        <p class="text-xs text-gray-400 m-0">
+                          {{ d.etablissement }}
+                        </p>
+                      </div>
+                    </div>
+                    <button mat-icon-button color="warn" (click)="removeDiplome(i)"
+                      class="w-7! h-7!">
+                      <mat-icon class="text-sm!">close</mat-icon>
+                    </button>
+                  </div>
+                  <p *ngIf="diplomes.length === 0"
+                    class="text-xs text-gray-400 text-center py-2">
+                    Aucun diplôme ajouté
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </form>
+
+          <div class="flex justify-between mt-6">
+            <button mat-stroked-button matStepperPrevious>
+              <mat-icon>arrow_back</mat-icon>
+              Retour
+            </button>
+            <button mat-flat-button color="primary" matStepperNext>
+              Continuer
+              <mat-icon>arrow_forward</mat-icon>
+            </button>
+          </div>
+        </div>
+      </mat-step>
+
+      <!-- ── Étape 4 : Récapitulatif & Soumission ── -->
+      <mat-step label="Récapitulatif">
+        <ng-template matStepLabel>
+          <span class="hidden sm:inline">Récapitulatif</span>
+          <span class="sm:hidden">Résumé</span>
+        </ng-template>
+
+        <div class="p-6">
+          <h2 class="text-lg font-bold text-gray-800 mb-1">Récapitulatif</h2>
+          <p class="text-sm text-gray-400 mb-6">
+            Vérifiez vos informations avant de soumettre
+          </p>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+            <!-- Résumé étape 1 -->
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+              <h3 class="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+                <mat-icon class="text-blue-500 text-base!">info</mat-icon>
+                Informations générales
+              </h3>
+              <div class="space-y-1">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500">Type</span>
+                  <span class="font-medium capitalize">
+                    {{ step1Form.get('type')?.value }}
+                  </span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500">Destination</span>
+                  <span class="font-medium">
+                    {{ step1Form.get('journeesDestination')?.value }}
+                  </span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500">Pays résidence</span>
+                  <span class="font-medium">
+                    {{ step1Form.get('paysResidenceLabel')?.value }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Résumé étape 2 -->
+            <div class="bg-purple-50 rounded-xl p-4 border border-purple-100">
+              <h3 class="text-sm font-bold text-purple-800 mb-3 flex items-center gap-2">
+                <mat-icon class="text-purple-500 text-base!">work</mat-icon>
+                Parcours professionnel
+              </h3>
+              <div class="space-y-1">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500">Niveau étude</span>
+                  <span class="font-medium">
+                    {{ step2Form.get('niveauEtude')?.value }}
+                  </span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500">Poste souhaité</span>
+                  <span class="font-medium">
+                    {{ step2Form.get('posteSouhaite')?.value }}
+                  </span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500">Expérience</span>
+                  <span class="font-medium">
+                    {{ step2Form.get('nombreAnneesExperience')?.value }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Résumé langues -->
+            <div class="bg-teal-50 rounded-xl p-4 border border-teal-100">
+              <h3 class="text-sm font-bold text-teal-800 mb-3 flex items-center gap-2">
+                <mat-icon class="text-teal-500 text-base!">translate</mat-icon>
+                Langues ({{ langues.length }})
+              </h3>
+              <div class="flex flex-wrap gap-2">
+                <span *ngFor="let l of langues"
+                  class="px-2 py-1 rounded-full text-xs bg-teal-100 text-teal-700">
+                  {{ l.langue }} — {{ l.niveau }}
+                </span>
+                <span *ngIf="langues.length === 0" class="text-xs text-gray-400">
+                  Aucune langue
+                </span>
+              </div>
+            </div>
+
+            <!-- Résumé diplômes -->
+            <div class="bg-orange-50 rounded-xl p-4 border border-orange-100">
+              <h3 class="text-sm font-bold text-orange-800 mb-3 flex items-center gap-2">
+                <mat-icon class="text-orange-500 text-base!">school</mat-icon>
+                Diplômes ({{ diplomes.length }})
+              </h3>
+              <div class="space-y-1">
+                <div *ngFor="let d of diplomes" class="text-xs text-gray-700">
+                  • {{ d.titre }} — {{ d.etablissement }}
+                </div>
+                <span *ngIf="diplomes.length === 0" class="text-xs text-gray-400">
+                  Aucun diplôme
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Boutons -->
+          <div class="flex justify-between">
+            <button mat-stroked-button matStepperPrevious>
+              <mat-icon>arrow_back</mat-icon>
+              Retour
+            </button>
+            <button mat-flat-button color="primary"
+              (click)="submitDemande()"
+              [disabled]="saving || step1Form.invalid || step2Form.invalid">
+              <mat-spinner *ngIf="saving" diameter="20" class="mr-2">
+              </mat-spinner>
+              <mat-icon *ngIf="!saving">send</mat-icon>
+              {{ saving ? 'Envoi en cours...' : (existingDemande ? 'Mettre à jour' : 'Soumettre mon dossier') }}
+            </button>
+          </div>
+        </div>
+      </mat-step>
+
+    </mat-stepper>
+  </div>
+</div>

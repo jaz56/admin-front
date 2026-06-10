@@ -1,0 +1,230 @@
+<div class="p-2">
+  <app-page-header
+    title="Dashboard"
+    subtitle="Vue d'ensemble de la plateforme d'immigration"
+    [alerts]="dashboardAlerts">
+  </app-page-header>
+  
+
+  <!-- Loading -->
+  <div *ngIf="
+  loading" class="flex justify-center py-20">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div *ngIf="!loading">
+
+    <!-- ─── LIGNE 1 : Cards KPI ─────────────────────────────── -->
+    <div class="grid grid-cols-12 gap-6 mb-6">
+      <div class="col-span-12 sm:col-span-6 xl:col-span-3"
+        *ngFor="let card of cards">
+        <mat-card
+          class="cardWithShadow cursor-pointer hover:shadow-lg transition-shadow"
+          [routerLink]="card.route">
+          <mat-card-content class="p-5">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 font-medium mb-1">
+                  {{ card.title }}
+                </p>
+                <h2 class="text-3xl font-bold text-gray-800">
+                  <span *ngIf="!card.isCurrency">{{ getStatValue(card.key) }}</span>
+                  <span *ngIf="card.isCurrency">{{ getStatValue(card.key) }} €</span>
+                </h2>
+                <p class="text-xs text-gray-400 mt-1">Total enregistrés</p>
+              </div>
+              <div class="w-14 h-14 rounded-full flex items-center justify-center"
+                [ngClass]="card.lightColor">
+                <mat-icon [ngClass]="card.textColor" class="text-2xl">
+                  {{ card.icon }}
+                </mat-icon>
+              </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-100">
+              <span class="text-xs font-medium" [ngClass]="card.textColor">
+                Voir tous →
+              </span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <!-- ─── LIGNE 2 : Graphiques ───────────────────────────── -->
+    <div class="grid grid-cols-12 gap-6 mb-6">
+
+      <!-- Camembert : Demandes par statut -->
+      <div class="col-span-12 xl:col-span-5">
+        <mat-card class="cardWithShadow h-full">
+          <mat-card-content class="p-5">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">
+              Demandes par statut
+            </h3>
+            <p class="text-sm text-gray-400 mb-4">Répartition des dossiers</p>
+            <div *ngIf="pieChartSeries.length > 0">
+              <apx-chart
+                [series]="pieChartSeries"
+                [chart]="pieChartOptions"
+                [labels]="pieChartLabels"
+                [legend]="pieChartLegend"
+                [dataLabels]="pieChartDataLabels"
+                [colors]="pieChartColors">
+              </apx-chart>
+            </div>
+            <div *ngIf="pieChartSeries.length === 0"
+              class="flex items-center justify-center h-48 text-gray-400 text-sm">
+              Aucune donnée disponible
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Barres : Volume des demandes -->
+      <div class="col-span-12 xl:col-span-7">
+        <mat-card class="cardWithShadow h-full">
+          <mat-card-content class="p-5">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">
+              Volume des demandes
+            </h3>
+            <p class="text-sm text-gray-400 mb-4">Par statut de traitement</p>
+            <div *ngIf="barChartSeries.length > 0">
+              <apx-chart
+                [series]="barChartSeries"
+                [chart]="barChartOptions"
+                [xaxis]="barChartXAxis"
+                [plotOptions]="barChartPlotOptions"
+                [colors]="barChartColors">
+              </apx-chart>
+            </div>
+            <div *ngIf="barChartSeries.length === 0"
+              class="flex items-center justify-center h-48 text-gray-400 text-sm">
+              Aucune donnée disponible
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <!-- ─── LIGNE 3 : Derniers candidats ──────────────────── -->
+    <div class="grid grid-cols-12 gap-6">
+      <div class="col-span-12">
+        <mat-card class="cardWithShadow">
+          <mat-card-content class="p-5">
+
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-gray-800">
+                  Derniers candidats inscrits
+                </h3>
+                <p class="text-sm text-gray-400 mt-1">
+                  Les 5 derniers comptes créés
+                </p>
+              </div>
+              <a routerLink="/users"
+                class="text-blue-600 text-sm font-medium hover:underline">
+                Voir tous →
+              </a>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-gray-100">
+                    <th class="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                      Candidat
+                    </th>
+                    <th class="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                      Email
+                    </th>
+                    <th class="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                      Pays
+                    </th>
+                    <th class="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                      Statut
+                    </th>
+                    <th class="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                      Inscrit le
+                    </th>
+                    <th class="text-left py-3 px-2 text-sm font-semibold text-gray-600">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let user of stats.recentUsers"
+                    class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+
+                    <!-- Candidat -->
+                    <td class="py-3 px-2">
+                      <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-blue-100
+                          flex items-center justify-center flex-shrink-0">
+                          <span class="text-blue-700 font-bold text-sm">
+                            {{ user.nom?.charAt(0)?.toUpperCase() }}
+                          </span>
+                        </div>
+                        <div>
+                          <div class="font-medium text-gray-800 text-sm">
+                            {{ user.nom }} {{ user.prenom }}
+                          </div>
+                          <div class="text-xs text-gray-400">
+                            {{ user.uniqueId }}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Email -->
+                    <td class="py-3 px-2">
+                      <span class="text-sm text-gray-600">{{ user.email }}</span>
+                    </td>
+
+                    <!-- Pays -->
+                    <td class="py-3 px-2">
+                      <span class="text-sm text-gray-600">
+                        {{ user.pays?.label || '—' }}
+                      </span>
+                    </td>
+
+                    <!-- Statut -->
+                    <td class="py-3 px-2">
+                      <span class="px-2 py-1 rounded-full text-xs font-medium"
+                        [ngClass]="getVerificationClass(user.candidateVerificationStatus)">
+                        {{ getVerificationLabel(user.candidateVerificationStatus) }}
+                      </span>
+                    </td>
+
+                    <!-- Date -->
+                    <td class="py-3 px-2">
+                      <span class="text-sm text-gray-500">
+                        {{ user.createdAt | date:'dd/MM/yyyy' }}
+                      </span>
+                    </td>
+
+                    <!-- Action -->
+                    <td class="py-3 px-2">
+                      <a [routerLink]="['/users', user._id]"
+                        class="text-blue-600 text-xs font-medium hover:underline">
+                        Voir →
+                      </a>
+                    </td>
+
+                  </tr>
+
+                  <tr *ngIf="stats.recentUsers.length === 0">
+                    <td colspan="6"
+                      class="text-center py-8 text-gray-400 text-sm">
+                      Aucun utilisateur trouvé
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+  </div>
+</div>
