@@ -33,4 +33,11 @@ export class OrderService {
   delete(id: string): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`);
   }
+  createForBooking(bookingId: string, payload: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/booking/${bookingId}`, payload);
+  }
+
+  getByBooking(bookingUniqueId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/booking/${bookingUniqueId}`);
+  }
 }

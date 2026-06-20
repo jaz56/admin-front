@@ -1,0 +1,137 @@
+<div class="p-2">
+
+  <app-page-header
+    title="Nouveau Booking"
+    subtitle="Planifier un entretien pour ce candidat">
+  </app-page-header>
+
+  <div class="flex items-center gap-3 mb-4">
+    <button mat-icon-button (click)="cancel()" class="bg-white shadow-sm border border-gray-100">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="text-xl font-bold text-gray-800 m-0">Créer un Booking</h1>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loadingDemande" class="flex justify-center py-20">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div *ngIf="!loadingDemande && demande" class="space-y-6">
+
+    <!-- Carte demande liée -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <mat-icon class="text-blue-500">link</mat-icon>
+        Demande liée
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-gray-50 rounded-xl p-3">
+          <p class="text-xs text-gray-400 m-0">Candidat</p>
+          <p class="text-sm font-semibold text-gray-800 m-0 mt-1">{{ getUserLabel() }}</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3">
+          <p class="text-xs text-gray-400 m-0">N° Demande</p>
+          <p class="text-sm font-mono text-gray-700 m-0 mt-1">{{ demande.uniqueId }}</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3">
+          <p class="text-xs text-gray-400 m-0">Type</p>
+          <p class="text-sm font-semibold text-gray-800 m-0 mt-1 capitalize">{{ demande.type }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulaire booking -->
+  <form [formGroup]="form" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+  <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
+    <mat-icon class="text-purple-500">event</mat-icon>
+    Détails du rendez-vous
+  </h2>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+    <!-- Type d'entretien — dynamique -->
+    <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">
+        Type d'entretien *
+      </mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select formControlName="appointmentType" (selectionChange)="onTypeChange()">
+          <mat-option *ngFor="let t of typeOptions" [value]="t.value">
+            {{ t.label }}
+            <span *ngIf="t.price" class="text-gray-400 text-xs ml-1">— {{ t.price }} €</span>
+          </mat-option>
+        </mat-select>
+        <mat-error>Type obligatoire</mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Prix -->
+    <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Prix (€) *</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-icon matPrefix class="text-gray-400 mr-1">euro</mat-icon>
+        <input matInput type="number" formControlName="price"/>
+        <mat-hint>Mis à jour automatiquement selon le type</mat-hint>
+        <mat-error>Prix obligatoire</mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Date RDV — datepicker Material -->
+    <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Date du RDV *</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <input matInput
+               [matDatepicker]="rdvPicker"
+               formControlName="appointmentDate"
+               placeholder="JJ/MM/AAAA"
+               readonly>
+        <mat-datepicker-toggle matIconSuffix [for]="rdvPicker">
+          <mat-icon matDatepickerToggleIcon>calendar_month</mat-icon>
+        </mat-datepicker-toggle>
+        <mat-datepicker #rdvPicker></mat-datepicker>
+        <mat-error>Date obligatoire</mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Heure RDV -->
+    <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Heure du RDV *</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-icon matPrefix class="text-gray-400 mr-1">schedule</mat-icon>
+        <input matInput type="time" formControlName="appointmentTime"/>
+        <mat-error>Heure obligatoire</mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Destination — dynamique -->
+    <div class="sm:col-span-2">
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Destination *</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-icon matPrefix class="text-gray-400 mr-1">flight_takeoff</mat-icon>
+        <mat-select formControlName="journeesDestination">
+          <mat-option *ngFor="let d of destinations" [value]="d.value">
+            {{ d.label }}
+          </mat-option>
+        </mat-select>
+        <mat-error>Destination obligatoire</mat-error>
+      </mat-form-field>
+    </div>
+
+  </div>
+</form>
+    <!-- Actions -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6
+      flex justify-end gap-3">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">
+        Annuler
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="submit()" [disabled]="saving">
+        <mat-spinner *ngIf="saving" diameter="18" class="mr-2"></mat-spinner>
+        <mat-icon *ngIf="!saving">event_available</mat-icon>
+        {{ saving ? 'Création...' : 'Créer le booking' }}
+      </button>
+    </div>
+
+  </div>
+</div>

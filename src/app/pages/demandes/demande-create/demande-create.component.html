@@ -1,0 +1,401 @@
+<div class="p-2">
+
+  <app-page-header
+    title="Nouvelle Demande"
+    subtitle="Créer un dossier de candidature pour un candidat">
+  </app-page-header>
+
+  <div class="flex items-center gap-3 mb-4">
+    <button mat-icon-button (click)="cancel()" class="bg-white shadow-sm border border-gray-100">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1 class="text-xl font-bold text-gray-800 m-0">Créer une demande</h1>
+  </div>
+
+  <form [formGroup]="form" class="space-y-6">
+
+    <!-- Sélection candidat -->
+<!-- Sélection candidat -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+  <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+    <mat-icon class="text-blue-500">person</mat-icon>
+    Candidat
+  </h2>
+
+  <!-- CAS 1 : verrouillé depuis la fiche candidat -->
+  <div *ngIf="fromUserDetail" class="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
+    <mat-icon class="text-blue-500">lock</mat-icon>
+    <div>
+      <p class="text-sm font-semibold text-gray-800 m-0">
+        {{ preselectedUser?.prenom }} {{ preselectedUser?.nom }}
+      </p>
+      <p class="text-xs text-gray-500 m-0">{{ preselectedUser?.email }}</p>
+      <p class="text-xs text-gray-400 m-0 mt-1">
+        Cette demande sera automatiquement associée à ce candidat.
+      </p>
+    </div>
+  </div>
+
+  <!-- CAS 2 : recherche libre avec autocomplete -->
+  <ng-container *ngIf="!fromUserDetail">
+    <div *ngIf="loadingUsers" class="flex justify-center py-4">
+      <mat-spinner diameter="30"></mat-spinner>
+    </div>
+
+    <mat-form-field *ngIf="!loadingUsers" appearance="outline" class="w-full">
+      <mat-label>Rechercher un candidat *</mat-label>
+      <mat-icon matPrefix class="text-gray-400 mr-2">search</mat-icon>
+      <input matInput
+        [(ngModel)]="userSearchDisplay"
+        [ngModelOptions]="{standalone: true}"
+        (ngModelChange)="onUserSearch($event)"
+        placeholder="Tapez un nom, prénom ou email..."
+        autocomplete="off"
+      />
+    </mat-form-field>
+
+    <!-- Suggestions -->
+    <div *ngIf="filteredUsers.length > 0"
+      class="border border-gray-200 rounded-xl mt-1 max-h-60 overflow-y-auto shadow-sm bg-white">
+      <button *ngFor="let u of filteredUsers" type="button"
+        (click)="selectUser(u)"
+        class="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-0
+          flex items-center gap-3 transition-colors">
+        <mat-icon class="text-gray-400">account_circle</mat-icon>
+        <div>
+          <p class="text-sm font-semibold text-gray-800 m-0">{{ u.prenom }} {{ u.nom }}</p>
+          <p class="text-xs text-gray-500 m-0">{{ u.email }}</p>
+        </div>
+      </button>
+    </div>
+
+    <!-- Candidat sélectionné -->
+    <div *ngIf="form.value.userId && filteredUsers.length === 0" class="mt-2 flex items-center gap-2 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+      <mat-icon class="text-green-500 text-base!">check_circle</mat-icon>
+      <span class="text-sm text-green-700 font-medium">{{ userSearchDisplay }}</span>
+      <button mat-icon-button type="button" class="ml-auto w-6! h-6!" (click)="clearSelectedUser()">
+        <mat-icon class="text-sm!">close</mat-icon>
+      </button>
+    </div>
+
+    <p *ngIf="!loadingUsers && users.length === 0"
+      class="text-sm text-gray-400 mt-2">
+      Aucun candidat trouvé. Créez d'abord un utilisateur.
+    </p>
+  </ng-container>
+</div>
+
+    <!-- Note éligibilité -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <mat-icon class="text-blue-500">info</mat-icon>
+        Statut & Note (Admin)
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Statut initial *</mat-label>
+          <mat-form-field appearance="outline" class="w-full">
+  <mat-select formControlName="status">
+    <mat-option *ngFor="let s of statutOptions" [value]="s.value">{{ s.label }}</mat-option>
+  </mat-select>
+</mat-form-field>
+        </div>
+      </div>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Note d'éligibilité</mat-label>
+        <textarea matInput rows="2" formControlName="eligibiliteNote"
+          placeholder="Note interne sur l'éligibilité..."></textarea>
+      </mat-form-field>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6">
+
+      <!-- Colonne gauche -->
+      <div class="col-span-12 lg:col-span-8 space-y-6">
+
+        <!-- Informations générales -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <mat-icon class="text-indigo-500">description</mat-icon>
+            Informations générales
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div>
+  <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Type *</mat-label>
+  <mat-form-field appearance="outline" class="w-full">
+    <mat-select formControlName="type">
+      <mat-option *ngFor="let t of typeOptions" [value]="t.value">{{ t.label }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+           <div>
+  <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Destination *</mat-label>
+  <mat-form-field appearance="outline" class="w-full">
+    <mat-select formControlName="journeesDestination">
+      <mat-option *ngFor="let d of destinationOptions" [value]="d.value">
+        {{ d.label }}
+      </mat-option>
+    </mat-select>
+    <mat-error>Destination obligatoire</mat-error>
+  </mat-form-field>
+</div>
+
+            <!-- Pays de résidence avec autocomplete -->
+<div class="sm:col-span-2">
+  <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Pays de résidence *</mat-label>
+  <div class="grid grid-cols-2 gap-3">
+
+    <!-- Autocomplete pays -->
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Rechercher un pays</mat-label>
+      <mat-icon matPrefix class="text-gray-400 mr-1">public</mat-icon>
+      <input matInput
+             [(ngModel)]="paysSearchText"
+             [ngModelOptions]="{standalone: true}"
+             [matAutocomplete]="paysAuto"
+             (ngModelChange)="onPaysSearch()"
+             placeholder="Ex: Tunisie, France..."
+             autocomplete="off">
+      <button *ngIf="paysSearchText" matSuffix mat-icon-button
+              type="button" (click)="clearPays()">
+        <mat-icon style="font-size:16px;width:16px;height:16px;">close</mat-icon>
+      </button>
+      <mat-autocomplete #paysAuto="matAutocomplete"
+                        (optionSelected)="onPaysSelected($event)"
+                        autoActiveFirstOption>
+        <mat-option *ngFor="let p of filteredPays" [value]="p.label">
+          <span [innerHTML]="highlightMatch(p.label, paysSearchText)"></span>
+        </mat-option>
+        <mat-option *ngIf="filteredPays.length === 0 && paysSearchText" disabled>
+          <span style="color:#9ca3af;font-style:italic;font-size:13px;">Aucun pays trouvé</span>
+        </mat-option>
+      </mat-autocomplete>
+      <mat-error *ngIf="form.get('paysResidenceLabel')?.invalid">Champ obligatoire</mat-error>
+    </mat-form-field>
+
+    <!-- Code pays — rempli automatiquement -->
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Code pays</mat-label>
+      <mat-icon matPrefix class="text-gray-400 mr-1">tag</mat-icon>
+      <input matInput formControlName="paysResidenceValue"
+             placeholder="Rempli automatiquement"
+             readonly
+             style="color:#6b7280; cursor:default;">
+      <mat-hint>Rempli automatiquement</mat-hint>
+    </mat-form-field>
+
+  </div>
+</div>
+
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <mat-checkbox formControlName="besoinVisa" color="primary">Besoin visa</mat-checkbox>
+            <mat-checkbox formControlName="typeHebergement" color="primary">Hébergement</mat-checkbox>
+            <mat-checkbox formControlName="existenceDeGarant" color="primary">Garant</mat-checkbox>
+            <mat-checkbox formControlName="ouverteTouteOpportunites" color="primary">Toutes opportunités</mat-checkbox>
+            <mat-checkbox formControlName="preinscription" color="primary">Préinscription</mat-checkbox>
+            <mat-checkbox formControlName="handicape" color="primary">Handicap</mat-checkbox>
+            <mat-checkbox formControlName="maladieContagieuse" color="warn" class="sm:col-span-3">
+              Maladie contagieuse déclarée
+            </mat-checkbox>
+          </div>
+        </div>
+
+        <!-- Parcours professionnel -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <mat-icon class="text-purple-500">work</mat-icon>
+            Parcours professionnel
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div>
+              <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Niveau d'étude *</mat-label>
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-select formControlName="niveauEtude">
+                  <mat-option *ngFor="let n of niveauEtudeOptions" [value]="n">{{ n }}</mat-option>
+                </mat-select>
+                <mat-error>Champ obligatoire</mat-error>
+              </mat-form-field>
+            </div>
+
+            <div>
+              <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Années d'étude</mat-label>
+              <mat-form-field appearance="outline" class="w-full">
+                <input matInput type="number" formControlName="nombreAnneesEtude"/>
+              </mat-form-field>
+            </div>
+
+            <div>
+              <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Mois de stage</mat-label>
+              <mat-form-field appearance="outline" class="w-full">
+                <input matInput type="number" formControlName="nombreMoisStage"/>
+              </mat-form-field>
+            </div>
+
+            <div>
+              <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Statut actuel *</mat-label>
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-select formControlName="condidatStatutActuel">
+                  <mat-option *ngFor="let s of statutActuelOptions" [value]="s.value">{{ s.label }}</mat-option>
+                </mat-select>
+                <mat-error>Champ obligatoire</mat-error>
+              </mat-form-field>
+            </div>
+
+            <div>
+              <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Dernier poste occupé</mat-label>
+              <mat-form-field appearance="outline" class="w-full">
+                <input matInput formControlName="dernierPosteOccupe"/>
+              </mat-form-field>
+            </div>
+<div>
+  <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Fonction *</mat-label>
+  <mat-form-field appearance="outline" class="w-full">
+    <mat-select formControlName="fonction">
+      <mat-option *ngFor="let f of fonctionOptions" [value]="f.value">{{ f.label }}</mat-option>
+    </mat-select>
+    <mat-error>Champ obligatoire</mat-error>
+  </mat-form-field>
+</div>
+
+            <div>
+              <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Années d'expérience</mat-label>
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-select formControlName="nombreAnneesExperience">
+                  <mat-option *ngFor="let e of experienceOptions" [value]="e">{{ e }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div>
+              <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Activité</mat-label>
+              <mat-form-field appearance="outline" class="w-full">
+                <input matInput formControlName="activite"/>
+              </mat-form-field>
+            </div>
+
+            <div class="sm:col-span-2">
+              <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Poste souhaité *</mat-label>
+              <mat-form-field appearance="outline" class="w-full">
+                <input matInput formControlName="posteSouhaite"/>
+                <mat-error>Champ obligatoire</mat-error>
+              </mat-form-field>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne droite -->
+      <div class="col-span-12 lg:col-span-4 space-y-6">
+
+        <!-- Langues -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <mat-icon class="text-teal-500">translate</mat-icon>
+            Langues
+          </h2>
+
+          <div class="flex gap-2 mb-3">
+            <mat-form-field appearance="outline" class="flex-1">
+              <mat-label>Langue</mat-label>
+              <mat-select formControlName="newLangue">
+                <mat-option *ngFor="let l of langueOptions" [value]="l">{{ l }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="flex-1">
+              <mat-label>Niveau</mat-label>
+              <mat-select formControlName="newNiveau">
+                <mat-option *ngFor="let n of niveauLangueOptions" [value]="n">{{ n }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <button mat-icon-button color="primary" type="button" (click)="addLangue()" class="mt-1">
+              <mat-icon>add_circle</mat-icon>
+            </button>
+          </div>
+
+          <div class="space-y-2">
+            <div *ngFor="let l of langues; let i = index"
+              class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-700">{{ l.langue }}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs bg-teal-100 text-teal-700">{{ l.niveau }}</span>
+              </div>
+              <button mat-icon-button color="warn" type="button" (click)="removeLangue(i)" class="w-7! h-7!">
+                <mat-icon class="text-sm!">close</mat-icon>
+              </button>
+            </div>
+            <p *ngIf="langues.length === 0" class="text-sm text-gray-400 text-center py-2">
+              Aucune langue ajoutée
+            </p>
+          </div>
+        </div>
+
+        <!-- Diplômes -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <mat-icon class="text-orange-500">school</mat-icon>
+            Diplômes
+          </h2>
+
+          <div class="space-y-2 mb-3">
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Titre</mat-label>
+              <input matInput formControlName="newDiplomeTitre"/>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Établissement</mat-label>
+              <input matInput formControlName="newDiplomeEtablissement"/>
+            </mat-form-field>
+            <div class="flex gap-2">
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Date</mat-label>
+                <input matInput type="date" formControlName="newDiplomeDate"/>
+              </mat-form-field>
+              <button mat-icon-button color="primary" type="button" (click)="addDiplome()" class="mt-1">
+                <mat-icon>add_circle</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div *ngFor="let d of diplomes; let i = index"
+              class="flex items-start justify-between bg-gray-50 rounded-lg p-3">
+              <div class="flex items-start gap-2">
+                <mat-icon class="text-orange-400 text-base! mt-0.5">workspace_premium</mat-icon>
+                <div>
+                  <p class="text-sm font-medium text-gray-800 m-0">{{ d.titre }}</p>
+                  <p class="text-xs text-gray-400 m-0">{{ d.etablissement }}</p>
+                </div>
+              </div>
+              <button mat-icon-button color="warn" type="button" (click)="removeDiplome(i)" class="w-7! h-7!">
+                <mat-icon class="text-sm!">close</mat-icon>
+              </button>
+            </div>
+            <p *ngIf="diplomes.length === 0" class="text-sm text-gray-400 text-center py-2">
+              Aucun diplôme ajouté
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6
+      flex justify-end gap-3">
+      <button mat-stroked-button type="button" (click)="cancel()" [disabled]="saving">
+        Annuler
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="submit()" [disabled]="saving">
+        <mat-spinner *ngIf="saving" diameter="18" class="mr-2"></mat-spinner>
+        <mat-icon *ngIf="!saving">add_circle</mat-icon>
+        {{ saving ? 'Création...' : 'Créer la demande' }}
+      </button>
+    </div>
+
+  </form>
+</div>

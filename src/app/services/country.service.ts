@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Country } from '../models/country.model';
 import { ApiResponse, PagedResponse } from '../models/api-response.model';
-
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 @Injectable({ providedIn: 'root' })
 export class CountryService {
   private apiUrl = `${environment.apiUrl}/countries`;
@@ -32,4 +32,11 @@ export class CountryService {
       { isActive }
     );
   }
+  getActiveForSelect(): Observable<{ value: string; label: string }[]> {
+  return this.http.get<{ value: string; label: string }[]>(
+    `${this.apiUrl}/active`
+  ).pipe(
+    catchError(() => of([]))
+  );
+}
 }

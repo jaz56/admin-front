@@ -11,13 +11,11 @@ export class BookingService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(page = 0, limit = 10, status?: string): Observable<PagedResponse<Booking>> {
-    let params = new HttpParams()
-      .set('page', page)
-      .set('limit', limit);
-    if (status) params = params.set('status', status);
-    return this.http.get<PagedResponse<Booking>>(this.apiUrl, { params });
-  }
+  getAll(page: number = 0, limit: number = 10): Observable<any> {
+  return this.http.get<any>(`${this.apiUrl}`, {
+    params: { page: page.toString(), limit: limit.toString() }
+  });
+}
 
   getById(id: string): Observable<ApiResponse<Booking>> {
     return this.http.get<ApiResponse<Booking>>(`${this.apiUrl}/${id}`);
@@ -41,7 +39,19 @@ export class BookingService {
     );
   }
 
-  delete(id: string): Observable<ApiResponse<void>> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`);
+  delete(id: string): Observable<any> {
+  return this.http.delete<any>(`${this.apiUrl}/${id}`);
+}
+  updateScore(id: string, score: number) {
+    // Le backend attend un @RequestParam, on l'envoie donc via 'params'
+    return this.http.patch(`${this.apiUrl}/${id}/score`, {}, {
+      params: { score: score.toString() }
+    });
   }
+  createAsAdmin(data: any): Observable<any> {
+  return this.http.post<any>(`${this.apiUrl}/admin`, data);
+}
+update(id: string, payload: any): Observable<any> {
+  return this.http.put<any>(`${this.apiUrl}/${id}`, payload);
+}
 }

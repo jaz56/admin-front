@@ -4,8 +4,7 @@ export interface Region {
 }
 
 export interface Country {
-  _id: string;
-  id: number;
+  id: string;
   code: string;
   name: string;
   region: Region;

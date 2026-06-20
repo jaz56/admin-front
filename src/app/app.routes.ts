@@ -1,8 +1,7 @@
 import { Routes } from '@angular/router';
 import { BlankComponent } from './layouts/blank/blank.component';
 import { FullComponent } from './layouts/full/full.component';
-import { CandidateLayoutComponent } from './layouts/candidate/candidate-layout.component';
-import { authGuard, adminGuard, candidateGuard } from './guards/auth.guard';
+import { authGuard, adminGuard  } from './guards/auth.guard';
 
 export const routes: Routes = [
   // ── Layout Admin ──────────────────────────────────────
@@ -50,45 +49,7 @@ export const routes: Routes = [
     ],
   },
 
-  // ── Layout Candidat ───────────────────────────────────
-  {
-    path: 'candidate',
-    component: CandidateLayoutComponent,
-    canActivate: [authGuard, candidateGuard],
-    children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      {
-        path: 'dashboard',
-        loadChildren: () =>
-          import('./pages/candidate/dashboard/candidate-dashboard.routes')
-            .then((m) => m.CandidateDashboardRoutes),
-      },
-      {
-        path: 'demande',
-        loadChildren: () =>
-          import('./pages/candidate/demande/candidate-demande.routes')
-            .then((m) => m.CandidateDemandeRoutes),
-      },
-      {
-        path: 'booking',
-        loadChildren: () =>
-          import('./pages/candidate/booking/candidate-booking.routes')
-            .then((m) => m.CandidateBookingRoutes),
-      },
-      {
-        path: 'profile',
-        loadChildren: () =>
-          import('./pages/candidate/profile/candidate-profile.routes')
-            .then((m) => m.CandidateProfileRoutes),
-      },
-      {
-        path: 'notifications',
-        loadChildren: () =>
-          import('./pages/candidate/notifications/candidate-notifications.routes')
-            .then((m) => m.CandidateNotificationsRoutes),
-      },
-    ],
-  },
+  
 
   // ── Auth ──────────────────────────────────────────────
   {

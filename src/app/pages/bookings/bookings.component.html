@@ -1,34 +1,203 @@
-<div class="p-6">
+<div class="p-6 space-y-4">
 
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800">Bookings</h1>
-      <p class="text-gray-500 text-sm mt-1">Gestion des rendez-vous et entretiens</p>
-    </div>
-    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-      {{ total }} bookings
-    </span>
+  <!-- Header (unique) -->
+  <div class="flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800 m-0">Bookings</h1>
+    <p class="text-gray-500 text-sm mt-1 m-0">Gestion des rendez-vous et entretiens</p>
   </div>
+  <div class="flex items-center gap-3">
+    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+      {{ total }} booking{{ total !== 1 ? 's' : '' }}
+    </span>
+    <button mat-stroked-button (click)="openConfig()"
+            class="flex items-center gap-2 border-gray-300 hover:bg-gray-50 font-semibold py-2">
+      <mat-icon class="text-gray-600">tune</mat-icon>
+      <span>Paramètres</span>
+    </button>
+  </div>
+</div>
 
-  <!-- Filtres -->
-  <mat-card class="cardWithShadow mb-6">
-    <mat-card-content class="p-4">
-      <div class="flex items-center gap-4">
-        <mat-form-field appearance="outline" class="w-52">
-          <mat-label>Statut</mat-label>
-          <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onStatusChange()">
-            <mat-option *ngFor="let s of statuts" [value]="s.value">
-              {{ s.label }}
-            </mat-option>
+  <!-- ════════ BARRE DE FILTRES ════════ -->
+  <div [formGroup]="filterForm" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+    <!-- Recherche + bouton filtres avancés -->
+    <div class="p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+
+      <div class="flex-1 relative">
+        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">search</mat-icon>
+        <input
+          formControlName="search"
+          type="text"
+          placeholder="Rechercher par ID, type, destination..."
+          class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm
+                 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all"
+        />
+      </div>
+
+      <button
+        (click)="toggleAdvancedFilters()"
+        class="relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all text-sm font-semibold whitespace-nowrap"
+        [ngClass]="showAdvancedFilters
+          ? 'bg-blue-50 border-blue-300 text-blue-700'
+          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'">
+        <mat-icon class="text-base!">tune</mat-icon>
+        Filtres avancés
+        <span *ngIf="activeFilterChips.length > 0"
+              class="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+          {{ activeFilterChips.length }}
+        </span>
+        <mat-icon class="text-base! transition-transform" [ngClass]="showAdvancedFilters ? 'rotate-180' : ''">
+          expand_more
+        </mat-icon>
+      </button>
+
+      <button *ngIf="hasActiveFilters" (click)="resetFilters()"
+        class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-200 text-red-600 bg-red-50
+               hover:bg-red-100 transition-all text-sm font-semibold whitespace-nowrap">
+        <mat-icon class="text-base!">filter_alt_off</mat-icon>
+        Réinitialiser
+      </button>
+    </div>
+
+    <!-- Chips quick-filters (raccourcis statut + destination) -->
+    <div class="px-4 pb-3 flex flex-wrap gap-2">
+      <button
+        *ngFor="let s of statusOptions.slice(1)"
+        (click)="filterForm.get('status')?.setValue(filterForm.value.status === s.value ? '' : s.value)"
+        class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+        [ngClass]="filterForm.value.status === s.value
+          ? (s.value === 'confirmed' ? 'bg-green-600 text-white border-green-600' :
+             s.value === 'pending' ? 'bg-amber-500 text-white border-amber-500' :
+             'bg-red-500 text-white border-red-500')
+          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'">
+        {{ s.label }}
+      </button>
+
+      <span class="w-px bg-gray-200 mx-1"></span>
+
+      <button
+        *ngFor="let d of destinationOptions.slice(1)"
+        (click)="filterForm.get('journeesDestination')?.setValue(filterForm.value.journeesDestination === d.value ? '' : d.value)"
+        class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+        [ngClass]="filterForm.value.journeesDestination === d.value
+          ? 'bg-blue-600 text-white border-blue-600'
+          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'">
+        {{ d.label }}
+      </button>
+    </div>
+
+    <!-- Panneau filtres avancés -->
+    <div *ngIf="showAdvancedFilters"
+         class="border-t border-gray-100 bg-gradient-to-br from-gray-50 to-blue-50/30 p-4
+                grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <div>
+        <label class="text-xs font-semibold text-gray-500 mb-1 block">Type de rendez-vous</label>
+        <mat-form-field appearance="outline" class="w-full compact-field">
+          <mat-select formControlName="appointmentType">
+            <mat-option *ngFor="let t of typeOptions" [value]="t.value">{{ t.label }}</mat-option>
           </mat-select>
         </mat-form-field>
-        <button mat-stroked-button color="primary" (click)="loadBookings()">
-          Actualiser
-        </button>
       </div>
-    </mat-card-content>
-  </mat-card>
+
+      <div>
+        <label class="text-xs font-semibold text-gray-500 mb-1 block">Statut paiement</label>
+        <mat-form-field appearance="outline" class="w-full compact-field">
+          <mat-select formControlName="paymentStatus">
+            <mat-option *ngFor="let p of paymentOptions" [value]="p.value">{{ p.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-gray-500 mb-1 block">Statut entretien</label>
+        <mat-form-field appearance="outline" class="w-full compact-field">
+          <mat-select formControlName="interviewStatus">
+            <mat-option *ngFor="let i of interviewStatusOptions" [value]="i.value">{{ i.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-gray-500 mb-1 block">Entretien complété</label>
+        <mat-form-field appearance="outline" class="w-full compact-field">
+          <mat-select formControlName="interviewCompleted">
+            <mat-option *ngFor="let c of interviewCompletedOptions" [value]="c.value">{{ c.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-gray-500 mb-1 block">Prix min (€)</label>
+        <mat-form-field appearance="outline" class="w-full compact-field">
+          <input matInput type="number" formControlName="priceMin" placeholder="0"/>
+        </mat-form-field>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-gray-500 mb-1 block">Prix max (€)</label>
+        <mat-form-field appearance="outline" class="w-full compact-field">
+          <input matInput type="number" formControlName="priceMax" placeholder="∞"/>
+        </mat-form-field>
+      </div>
+
+      <div>
+  <label class="text-xs font-semibold text-gray-500 mb-1 block">RDV à partir du</label>
+  <mat-form-field appearance="outline" class="w-full compact-field">
+    <input matInput
+           [matDatepicker]="pickerFrom"
+           formControlName="dateFrom"
+           placeholder="JJ/MM/AAAA"
+           readonly>
+    <mat-datepicker-toggle matIconSuffix [for]="pickerFrom">
+      <mat-icon matDatepickerToggleIcon>calendar_month</mat-icon>
+    </mat-datepicker-toggle>
+    <mat-datepicker #pickerFrom></mat-datepicker>
+  </mat-form-field>
+</div>
+
+      <div>
+  <label class="text-xs font-semibold text-gray-500 mb-1 block">RDV jusqu'au</label>
+  <mat-form-field appearance="outline" class="w-full compact-field">
+    <input matInput
+           [matDatepicker]="pickerTo"
+           formControlName="dateTo"
+           placeholder="JJ/MM/AAAA"
+           readonly>
+    <mat-datepicker-toggle matIconSuffix [for]="pickerTo">
+      <mat-icon matDatepickerToggleIcon>calendar_month</mat-icon>
+    </mat-datepicker-toggle>
+    <mat-datepicker #pickerTo></mat-datepicker>
+  </mat-form-field>
+</div>
+
+    </div>
+
+    <!-- Chips de filtres actifs -->
+    <div *ngIf="hasActiveFilters" class="px-4 pb-4 flex flex-wrap gap-2 items-center border-t border-gray-100 pt-3">
+      <span class="text-xs text-gray-400 font-semibold">Filtres actifs:</span>
+      <span *ngFor="let chip of activeFilterChips"
+            class="flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-medium pl-3 pr-1.5 py-1 rounded-full">
+        {{ chip.label }}
+        <button (click)="clearFilter(chip.key)" class="hover:bg-blue-200 rounded-full p-0.5 transition-colors">
+          <mat-icon style="width:14px;height:14px;font-size:14px;">close</mat-icon>
+        </button>
+      </span>
+    </div>
+
+  </div>
+
+  <!-- Compteur de résultats -->
+  <div class="flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500 m-0">
+      <span class="font-semibold text-gray-800">{{ filteredBookings.length }}</span>
+      résultat{{ filteredBookings.length !== 1 ? 's' : '' }}
+      <span *ngIf="filteredBookings.length !== bookings.length">
+        sur {{ bookings.length }}
+      </span>
+    </p>
+  </div>
 
   <!-- Tableau -->
   <mat-card class="cardWithShadow">
@@ -39,7 +208,7 @@
       </div>
 
       <div *ngIf="!loading" class="overflow-x-auto">
-        <table mat-table [dataSource]="bookings" class="w-full">
+        <table mat-table [dataSource]="pagedBookings" class="w-full">
 
           <!-- UniqueId -->
           <ng-container matColumnDef="uniqueId">
@@ -142,34 +311,39 @@
 
           <!-- Actions -->
           <ng-container matColumnDef="actions">
-  <th mat-header-cell *matHeaderCellDef class="font-semibold">Actions</th>
-  <td mat-cell *matCellDef="let b">
-    <div class="flex items-center gap-1">
-      <button mat-icon-button color="primary"
-        [routerLink]="['/bookings', b.id]"
-        matTooltip="Voir détails">
-        <mat-icon>visibility</mat-icon>
-      </button>
-      
-      <button mat-icon-button [matMenuTriggerFor]="statusMenu"
-        matTooltip="Changer statut">
-        <mat-icon>edit</mat-icon>
-      </button>
-      <mat-menu #statusMenu="matMenu">
-        <button mat-menu-item *ngFor="let s of statuts.slice(1)"
-          (click)="updateStatus(b.id, s.value)">
-          {{ s.label }}
-        </button>
-      </mat-menu>
-      
-      <button mat-icon-button color="warn"
-        (click)="deleteBooking(b.id)"
-        matTooltip="Supprimer">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </div>
-  </td>
-</ng-container>
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Actions</th>
+            <td mat-cell *matCellDef="let b">
+              <div class="flex items-center gap-1">
+                <button mat-icon-button color="primary"
+                  [routerLink]="['/bookings', b.id]"
+                  matTooltip="Voir détails">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+
+                <button mat-icon-button [matMenuTriggerFor]="statusMenu"
+                  matTooltip="Changer statut">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button class="text-yellow-500"
+                  (click)="openScoreDialog(b)"
+                  matTooltip="Évaluer le candidat">
+                  <mat-icon>star_rate</mat-icon>
+                </button>
+                <mat-menu #statusMenu="matMenu">
+                  <button mat-menu-item *ngFor="let s of statuts.slice(1)"
+                    (click)="updateStatus(b.id, s.value)">
+                    {{ s.label }}
+                  </button>
+                </mat-menu>
+
+                <button mat-icon-button color="warn"
+                  (click)="deleteBooking(b.id)"
+                  matTooltip="Supprimer">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"
@@ -194,4 +368,5 @@
 
     </mat-card-content>
   </mat-card>
+
 </div>

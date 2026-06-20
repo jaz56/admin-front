@@ -1,0 +1,389 @@
+<div class="p-2">
+  <app-page-header title="Détail du Booking" subtitle="Informations et commandes liées">
+  </app-page-header>
+
+  <div *ngIf="loading" class="flex justify-center py-20">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+
+  <div *ngIf="!loading && booking" class="space-y-6">
+
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-3">
+        <button mat-icon-button (click)="goBack()" class="bg-white shadow-sm border border-gray-100">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div>
+          <p class="text-xs text-gray-400 font-mono">{{ booking.uniqueId }}</p>
+          <h1 class="text-xl font-bold text-gray-800 m-0">Booking — {{ booking.appointmentType }}</h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button *ngIf="!editMode" mat-flat-button color="primary" (click)="toggleEdit()">
+          <mat-icon>edit</mat-icon>
+          Modifier
+        </button>
+        <ng-container *ngIf="editMode">
+          <button mat-stroked-button (click)="toggleEdit()" [disabled]="saving">
+            <mat-icon>close</mat-icon>
+            Annuler
+          </button>
+          <button mat-flat-button color="primary" (click)="saveChanges()" [disabled]="saving">
+            <mat-spinner *ngIf="saving" diameter="18" class="mr-2"></mat-spinner>
+            <mat-icon *ngIf="!saving">save</mat-icon>
+            {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- ════════ MODE LECTURE ════════ -->
+    <ng-container *ngIf="!editMode">
+
+      <!-- Informations rendez-vous -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <mat-icon class="text-blue-500">event</mat-icon>
+          Rendez-vous
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-gray-50 rounded-xl p-3">
+  <p class="text-xs text-gray-400 m-0">Type</p>
+  <p class="text-sm font-semibold m-0 mt-1">{{ getTypeLabel(booking.appointmentType) }}</p>
+</div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Date RDV</p>
+            <p class="text-sm font-semibold m-0 mt-1">{{ booking.appointmentDate | date:'dd/MM/yyyy' }}</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Heure</p>
+            <p class="text-sm font-semibold m-0 mt-1">{{ booking.appointmentTime }}</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+  <p class="text-xs text-gray-400 m-0">Destination</p>
+  <p class="text-sm font-semibold m-0 mt-1">{{ getDestinationLabel(booking.journeesDestination) }}</p>
+</div>
+        </div>
+      </div>
+
+      <!-- Statuts & paiement -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <mat-icon class="text-green-500">payments</mat-icon>
+          Statuts & Paiement
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Statut booking</p>
+            <p class="text-sm font-semibold m-0 mt-1 capitalize">{{ booking.status }}</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+  <p class="text-xs text-gray-400 m-0">Statut paiement</p>
+  <p class="text-sm font-semibold m-0 mt-1">{{ getPaymentLabel(booking.paymentStatus) }}</p>
+</div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Prix</p>
+            <p class="text-sm font-semibold m-0 mt-1">{{ booking.price }} €</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Mise à jour statut</p>
+            <p class="text-sm font-semibold m-0 mt-1">{{ booking.statusUpdateDate }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entretien -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <mat-icon class="text-purple-500">record_voice_over</mat-icon>
+          Entretien
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+         <div class="bg-gray-50 rounded-xl p-3">
+  <p class="text-xs text-gray-400 m-0">Statut entretien</p>
+  <p class="text-sm font-semibold m-0 mt-1">{{ getInterviewStatusLabel(booking.interviewStatus) }}</p>
+</div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Entretien complété</p>
+            <p class="text-sm font-semibold m-0 mt-1 flex items-center gap-1">
+              <mat-icon class="text-base!" [ngClass]="booking.interviewCompleted ? 'text-green-500' : 'text-gray-300'">
+                {{ booking.interviewCompleted ? 'check_circle' : 'cancel' }}
+              </mat-icon>
+            </p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Score</p>
+            <p class="text-sm font-semibold m-0 mt-1">
+              {{ booking.interviewScore != null ? booking.interviewScore + '/100' : '—' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Rapport entretien</p>
+            <a *ngIf="booking.interviewReport" [href]="booking.interviewReport" target="_blank"
+               class="text-sm font-semibold text-blue-600 hover:underline break-all">
+              {{ booking.interviewReport }}
+            </a>
+            <p *ngIf="!booking.interviewReport" class="text-sm text-gray-400 m-0 mt-1">—</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl p-3">
+            <p class="text-xs text-gray-400 m-0">Enregistrement entretien</p>
+            <a *ngIf="booking.interviewRecording" [href]="booking.interviewRecording" target="_blank"
+               class="text-sm font-semibold text-blue-600 hover:underline break-all">
+              {{ booking.interviewRecording }}
+            </a>
+            <p *ngIf="!booking.interviewRecording" class="text-sm text-gray-400 m-0 mt-1">—</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informations système -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <mat-icon class="text-gray-400">schedule</mat-icon>
+          Informations système
+        </h2>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">ID Candidat</span>
+            <span class="font-mono text-xs text-gray-600">{{ booking.userId }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">ID Demande</span>
+            <span class="font-mono text-xs text-gray-600">{{ booking.demandeId }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Créé le</span>
+            <span class="text-gray-700">{{ booking.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Modifié le</span>
+            <span class="text-gray-700">{{ booking.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+        </div>
+      </div>
+
+    </ng-container>
+
+    <!-- ════════ MODE ÉDITION ════════ -->
+    <form *ngIf="editMode" [formGroup]="form" class="space-y-6">
+
+      <!-- Rendez-vous -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+  <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+    <mat-icon class="text-blue-500">event</mat-icon>
+    Rendez-vous
+  </h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+           <!-- Type — select dynamique -->
+    <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Type de rendez-vous</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select formControlName="appointmentType">
+          <mat-option *ngFor="let t of typeOptions" [value]="t.value">{{ t.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+          <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Destination</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select formControlName="journeesDestination">
+          <mat-option *ngFor="let d of destinationOptions" [value]="d.value">{{ d.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+           <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Date RDV</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <input matInput
+               [matDatepicker]="rdvPicker"
+               formControlName="appointmentDate"
+               placeholder="JJ/MM/AAAA"
+               readonly>
+        <mat-datepicker-toggle matIconSuffix [for]="rdvPicker">
+          <mat-icon matDatepickerToggleIcon>calendar_month</mat-icon>
+        </mat-datepicker-toggle>
+        <mat-datepicker #rdvPicker></mat-datepicker>
+      </mat-form-field>
+    </div>
+
+           <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Heure RDV</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-icon matPrefix class="text-gray-400 mr-1">schedule</mat-icon>
+        <input matInput formControlName="appointmentTime" placeholder="14:00"/>
+      </mat-form-field>
+    </div>
+
+  
+
+        </div>
+      </div>
+
+      <!-- Statuts & paiement -->
+     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+  <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+    <mat-icon class="text-green-500">payments</mat-icon>
+    Statuts & Paiement
+  </h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+    <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Prix</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-icon matPrefix class="text-gray-400 mr-1">euro</mat-icon>
+        <input matInput type="number" formControlName="price"/>
+      </mat-form-field>
+    </div>
+
+          <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Statut du booking</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select formControlName="status">
+          <mat-option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+           <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Statut paiement</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select formControlName="paymentStatus">
+          <mat-option *ngFor="let p of paymentOptions" [value]="p.value">{{ p.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Mise à jour statut</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select formControlName="statusUpdateDate">
+          <mat-option value="yes">Oui</mat-option>
+          <mat-option value="no">Non</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+        </div>
+      </div>
+
+      <!-- Entretien -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+  <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+    <mat-icon class="text-purple-500">record_voice_over</mat-icon>
+    Entretien
+  </h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Statut entretien</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select formControlName="interviewStatus">
+          <mat-option *ngFor="let i of interviewStatusOptions" [value]="i.value">
+            {{ i.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Score entretien (0-100)</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <input matInput type="number" min="0" max="100" formControlName="interviewScore"/>
+      </mat-form-field>
+    </div>
+
+          <div>
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Entretien complété</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select formControlName="interviewCompleted">
+          <mat-option [value]="true">Complété</mat-option>
+          <mat-option [value]="false">Non complété</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="sm:col-span-2">
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Lien rapport entretien</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-icon matPrefix class="text-gray-400 mr-1">link</mat-icon>
+        <input matInput formControlName="interviewReport" placeholder="https://..."/>
+      </mat-form-field>
+    </div>
+
+          <div class="sm:col-span-2">
+      <mat-label class="text-sm font-semibold text-gray-700 mb-2 block">Lien enregistrement entretien</mat-label>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-icon matPrefix class="text-gray-400 mr-1">videocam</mat-icon>
+        <input matInput formControlName="interviewRecording" placeholder="https://..."/>
+      </mat-form-field>
+    </div>
+
+        </div>
+      </div>
+
+      <!-- Informations système (lecture seule même en édition) -->
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+        <h2 class="text-sm font-bold text-amber-800 mb-3 flex items-center gap-2">
+          <mat-icon class="text-amber-500 text-base!">lock</mat-icon>
+          Informations système (non modifiables)
+        </h2>
+        <div class="space-y-1 text-sm">
+          <div class="flex justify-between">
+            <span class="text-amber-700">ID Candidat</span>
+            <span class="font-mono text-xs text-amber-800">{{ booking.userId }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-amber-700">ID Demande</span>
+            <span class="font-mono text-xs text-amber-800">{{ booking.demandeId }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-amber-700">ID Booking (uniqueId)</span>
+            <span class="font-mono text-xs text-amber-800">{{ booking.uniqueId }}</span>
+          </div>
+        </div>
+      </div>
+
+    </form>
+
+    <!-- Commandes liées -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-bold text-gray-800 flex items-center gap-2 m-0">
+          <mat-icon class="text-green-500">receipt_long</mat-icon>
+          Commandes
+        </h2>
+        <button mat-flat-button color="primary"
+          (click)="createOrder()"
+          [disabled]="!canCreateOrder || creatingOrder"
+          [matTooltip]="orderBlockedReason">
+          <mat-spinner *ngIf="creatingOrder" diameter="18" class="mr-2"></mat-spinner>
+          <mat-icon *ngIf="!creatingOrder">add_shopping_cart</mat-icon>
+          {{ creatingOrder ? 'Création...' : 'Créer un Order' }}
+        </button>
+      </div>
+
+      <div *ngIf="orders.length === 0" class="text-sm text-gray-400 text-center py-4">
+        Aucune commande associée à ce booking
+      </div>
+
+      <div *ngFor="let o of orders" class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 mb-2">
+        <div>
+          <p class="text-sm font-semibold m-0">{{ o.orderId }}</p>
+          <p class="text-xs text-gray-500 m-0">{{ o.date }} — {{ o.time }}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm font-semibold m-0">{{ o.price }} {{ o.currency }}</p>
+          <span class="px-2 py-0.5 rounded-full text-xs"
+            [ngClass]="o.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'">
+            {{ o.status }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

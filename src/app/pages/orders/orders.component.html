@@ -1,34 +1,190 @@
-<div class="p-6">
+<div class="p-6 space-y-4">
 
   <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800">Orders</h1>
-      <p class="text-gray-500 text-sm mt-1">Gestion des transactions et paiements</p>
-    </div>
+ <div class="flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-800 m-0">Orders</h1>
+    <p class="text-gray-500 text-sm mt-1 m-0">Gestion des transactions et paiements</p>
+  </div>
+  <div class="flex items-center gap-3">
     <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-      {{ total }} orders
+      {{ total }} order{{ total !== 1 ? 's' : '' }}
     </span>
+    <button mat-stroked-button (click)="openConfig()"
+            class="flex items-center gap-2 border-gray-300 hover:bg-gray-50 font-semibold py-2">
+      <mat-icon class="text-gray-600">tune</mat-icon>
+      <span>Paramètres</span>
+    </button>
+  </div>
+</div>
+
+  <!-- ════════ BARRE DE FILTRES ════════ -->
+  <div [formGroup]="filterForm" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+    <div class="p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+
+      <div class="flex-1 relative">
+        <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">search</mat-icon>
+        <input
+          formControlName="search"
+          type="text"
+          placeholder="Rechercher par Order ID, Booking ID, User ID..."
+          class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm
+                 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all"
+        />
+      </div>
+
+      <button
+        (click)="toggleAdvancedFilters()"
+        class="relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all text-sm font-semibold whitespace-nowrap"
+        [ngClass]="showAdvancedFilters
+          ? 'bg-blue-50 border-blue-300 text-blue-700'
+          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'">
+        <mat-icon class="text-base!">tune</mat-icon>
+        Filtres avancés
+        <span *ngIf="activeFilterChips.length > 0"
+              class="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+          {{ activeFilterChips.length }}
+        </span>
+        <mat-icon class="text-base! transition-transform" [ngClass]="showAdvancedFilters ? 'rotate-180' : ''">
+          expand_more
+        </mat-icon>
+      </button>
+
+      <button *ngIf="hasActiveFilters" (click)="resetFilters()"
+        class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-200 text-red-600 bg-red-50
+               hover:bg-red-100 transition-all text-sm font-semibold whitespace-nowrap">
+        <mat-icon class="text-base!">filter_alt_off</mat-icon>
+        Réinitialiser
+      </button>
+    </div>
+
+    <!-- Chips quick-filters: type -->
+    <div class="px-4 pb-3 flex flex-wrap gap-2">
+      <button
+        *ngFor="let t of typeOptions.slice(1)"
+        (click)="filterForm.get('type')?.setValue(filterForm.value.type === t.value ? '' : t.value)"
+        class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+        [ngClass]="filterForm.value.type === t.value
+          ? 'bg-blue-600 text-white border-blue-600'
+          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'">
+        {{ t.label }}
+      </button>
+
+      <span class="w-px bg-gray-200 mx-1"></span>
+
+      <button
+        *ngFor="let s of statusOptions.slice(1)"
+        (click)="filterForm.get('status')?.setValue(filterForm.value.status === s.value ? '' : s.value)"
+        class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+        [ngClass]="filterForm.value.status === s.value
+          ? (s.value === 'paid' || s.value === 'completed' ? 'bg-green-600 text-white border-green-600' :
+             s.value === 'created' ? 'bg-amber-500 text-white border-amber-500' :
+             'bg-red-500 text-white border-red-500')
+          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'">
+        {{ s.label }}
+      </button>
+    </div>
+
+    <!-- Panneau filtres avancés -->
+    <div *ngIf="showAdvancedFilters"
+         class="border-t border-gray-100 bg-gradient-to-br from-gray-50 to-blue-50/30 p-4
+                grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+       <div>
+    <label class="text-xs font-semibold text-gray-500 mb-1 block">Destination</label>
+    <mat-form-field appearance="outline" class="w-full compact-field">
+      <mat-select formControlName="country">
+        <mat-option *ngFor="let d of destinationOptions" [value]="d.value">
+          {{ d.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
   </div>
 
-  <!-- Filtres -->
-  <mat-card class="cardWithShadow mb-6">
-    <mat-card-content class="p-4">
-      <div class="flex items-center gap-4">
-        <mat-form-field appearance="outline" class="w-52">
-          <mat-label>Statut</mat-label>
-          <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onStatusChange()">
-            <mat-option *ngFor="let s of statuts" [value]="s.value">
-              {{ s.label }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-        <button mat-stroked-button color="primary" (click)="loadOrders()">
-          Actualiser
+       <div>
+    <label class="text-xs font-semibold text-gray-500 mb-1 block">Devise</label>
+    <mat-form-field appearance="outline" class="w-full compact-field">
+      <mat-select formControlName="currency">
+        <mat-option *ngFor="let c of currencyOptions" [value]="c.value">
+          {{ c.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+
+      <div>
+    <label class="text-xs font-semibold text-gray-500 mb-1 block">Montant min</label>
+    <mat-form-field appearance="outline" class="w-full compact-field">
+      <input matInput type="number" formControlName="priceMin" placeholder="0"/>
+    </mat-form-field>
+  </div>
+
+  <!-- Montant max -->
+  <div>
+    <label class="text-xs font-semibold text-gray-500 mb-1 block">Montant max</label>
+    <mat-form-field appearance="outline" class="w-full compact-field">
+      <input matInput type="number" formControlName="priceMax" placeholder="∞"/>
+    </mat-form-field>
+  </div>
+
+
+     <div>
+    <label class="text-xs font-semibold text-gray-500 mb-1 block">À partir du</label>
+    <mat-form-field appearance="outline" class="w-full compact-field">
+      <input matInput
+             [matDatepicker]="pickerFrom"
+             formControlName="dateFrom"
+             placeholder="JJ/MM/AAAA"
+             readonly>
+      <mat-datepicker-toggle matIconSuffix [for]="pickerFrom">
+        <mat-icon matDatepickerToggleIcon>calendar_month</mat-icon>
+      </mat-datepicker-toggle>
+      <mat-datepicker #pickerFrom></mat-datepicker>
+    </mat-form-field>
+  </div>
+     <div>
+    <label class="text-xs font-semibold text-gray-500 mb-1 block">Jusqu'au</label>
+    <mat-form-field appearance="outline" class="w-full compact-field">
+      <input matInput
+             [matDatepicker]="pickerTo"
+             formControlName="dateTo"
+             placeholder="JJ/MM/AAAA"
+             readonly>
+      <mat-datepicker-toggle matIconSuffix [for]="pickerTo">
+        <mat-icon matDatepickerToggleIcon>calendar_month</mat-icon>
+      </mat-datepicker-toggle>
+      <mat-datepicker #pickerTo></mat-datepicker>
+    </mat-form-field>
+  </div>
+
+    </div>
+
+    <!-- Chips de filtres actifs -->
+    <div *ngIf="hasActiveFilters" class="px-4 pb-4 flex flex-wrap gap-2 items-center border-t border-gray-100 pt-3">
+      <span class="text-xs text-gray-400 font-semibold">Filtres actifs:</span>
+      <span *ngFor="let chip of activeFilterChips"
+            class="flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-medium pl-3 pr-1.5 py-1 rounded-full">
+        {{ chip.label }}
+        <button (click)="clearFilter(chip.key)" class="hover:bg-blue-200 rounded-full p-0.5 transition-colors">
+          <mat-icon style="width:14px;height:14px;font-size:14px;">close</mat-icon>
         </button>
-      </div>
-    </mat-card-content>
-  </mat-card>
+      </span>
+    </div>
+
+  </div>
+
+  <!-- Compteur -->
+  <div class="flex items-center justify-between px-1">
+    <p class="text-sm text-gray-500 m-0">
+      <span class="font-semibold text-gray-800">{{ filteredOrders.length }}</span>
+      résultat{{ filteredOrders.length !== 1 ? 's' : '' }}
+      <span *ngIf="filteredOrders.length !== orders.length">
+        sur {{ orders.length }}
+      </span>
+    </p>
+  </div>
 
   <!-- Tableau -->
   <mat-card class="cardWithShadow">
@@ -39,7 +195,7 @@
       </div>
 
       <div *ngIf="!loading" class="overflow-x-auto">
-        <table mat-table [dataSource]="orders" class="w-full">
+        <table mat-table [dataSource]="pagedOrders" class="w-full">
 
           <!-- Order ID -->
           <ng-container matColumnDef="orderId">
@@ -55,7 +211,7 @@
           <ng-container matColumnDef="bookingId">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">Booking ID</th>
             <td mat-cell *matCellDef="let o">
-              <span class="text-xs font-mono text-gray-600">{{ o.bookingId }}</span>
+              <span class="text-xs font-mono text-gray-600">{{ o.bookingId || '—' }}</span>
             </td>
           </ng-container>
 
@@ -81,6 +237,28 @@
             </td>
           </ng-container>
 
+          <!-- Prix / Montant -->
+          <ng-container matColumnDef="price">
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Montant</th>
+            <td mat-cell *matCellDef="let o">
+              <span class="font-semibold text-gray-800" *ngIf="o.price != null">
+                {{ o.price }} {{ o.currency }}
+              </span>
+              <span class="font-semibold text-gray-800" *ngIf="o.price == null && o.amount != null">
+                {{ o.amount }} {{ o.currency }}
+              </span>
+              <span *ngIf="o.price == null && o.amount == null" class="text-gray-400">—</span>
+            </td>
+          </ng-container>
+
+          <!-- Pays -->
+         <ng-container matColumnDef="country">
+  <th mat-header-cell *matHeaderCellDef class="font-semibold">Destination</th>
+  <td mat-cell *matCellDef="let o">
+    <span class="text-sm text-gray-700">{{ getDestinationLabel(o.country) }}</span>
+  </td>
+</ng-container>
+
           <!-- Date -->
           <ng-container matColumnDef="date">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">Date</th>
@@ -95,6 +273,13 @@
             <td mat-cell *matCellDef="let o">
               <div class="flex items-center gap-1">
 
+                <!-- Voir détails -->
+                <button mat-icon-button color="primary"
+                  (click)="viewDetails(o)"
+                  matTooltip="Voir détails">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+
                 <!-- Changer statut -->
                 <button mat-icon-button
                   [matMenuTriggerFor]="statusMenu"
@@ -103,14 +288,14 @@
                 </button>
                 <mat-menu #statusMenu="matMenu">
                   <button mat-menu-item *ngFor="let s of statuts.slice(1)"
-                    (click)="updateStatus(o._id, s.value)">
+                    (click)="updateStatus(o.id, s.value)">
                     {{ s.label }}
                   </button>
                 </mat-menu>
 
                 <!-- Supprimer -->
                 <button mat-icon-button color="warn"
-                  (click)="deleteOrder(o._id)"
+                  (click)="deleteOrder(o.id)"
                   matTooltip="Supprimer">
                   <mat-icon>delete</mat-icon>
                 </button>
@@ -133,6 +318,7 @@
         <mat-paginator
           [length]="total"
           [pageSize]="limit"
+          [pageIndex]="page"
           [pageSizeOptions]="[5, 10, 25, 50]"
           (page)="onPageChange($event)"
           showFirstLastButtons>
@@ -141,4 +327,5 @@
 
     </mat-card-content>
   </mat-card>
+
 </div>

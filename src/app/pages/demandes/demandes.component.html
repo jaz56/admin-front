@@ -6,26 +6,231 @@
       <h1 class="text-2xl font-bold text-gray-800">Demandes</h1>
       <p class="text-gray-500 text-sm mt-1">Gestion des dossiers de candidature</p>
     </div>
-    <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-      {{ total }} demandes
-    </span>
+    <div class="flex items-center gap-3">
+      <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+        {{ total }} demandes
+      </span>
+       <button mat-stroked-button (click)="openConfig()"
+            class="flex items-center gap-2 border-gray-300 hover:bg-gray-50 font-semibold py-2">
+      <mat-icon class="text-gray-600">tune</mat-icon>
+      <span>Paramètres</span>
+    </button>
+      <button mat-raised-button color="primary" routerLink="/demandes/new"
+        class="flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+        <mat-icon>add</mat-icon>
+        <span>Nouvelle demande</span>
+      </button>
+    </div>
   </div>
 
   <!-- Filtres -->
-  <mat-card class="cardWithShadow mb-6">
-    <mat-card-content class="p-4">
-      <div class="flex items-center gap-4">
-        <mat-form-field appearance="outline" class="w-52">
-          <mat-label>Statut</mat-label>
-          <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onStatusChange()">
-            <mat-option *ngFor="let s of statuts" [value]="s.value">
-              {{ s.label }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-        <button mat-stroked-button color="primary" (click)="loadDemandes()">
-          Actualiser
-        </button>
+  <mat-card class="cardWithShadow mb-6 overflow-hidden">
+    <mat-card-content class="p-4 bg-gray-50/60 flex flex-col gap-4">
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+
+        <!-- Statut -->
+        <div class="lg:col-span-3">
+          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+            <mat-label>Statut</mat-label>
+            <mat-icon matPrefix class="text-gray-400 mr-2">flag</mat-icon>
+            <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onFilterChange()"
+            [ngModelOptions]="{standalone: true}">
+              <mat-option *ngFor="let s of statuts" [value]="s.value">{{ s.label }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Type -->
+        <div class="lg:col-span-3">
+          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+            <mat-label>Type de candidature</mat-label>
+            <mat-icon matPrefix class="text-gray-400 mr-2">category</mat-icon>
+<mat-select [(ngModel)]="selectedType" (selectionChange)="onFilterChange()"
+            [ngModelOptions]="{standalone: true}">
+              <mat-option *ngFor="let t of types" [value]="t.value">{{ t.label }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Destination -->
+        <div class="lg:col-span-3">
+          <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+            <mat-label>Destination</mat-label>
+            <mat-icon matPrefix class="text-gray-400 mr-2">flight_takeoff</mat-icon>
+<mat-select [(ngModel)]="selectedDestination" (selectionChange)="onFilterChange()"
+            [ngModelOptions]="{standalone: true}">              <mat-option *ngFor="let d of destinations" [value]="d.value">{{ d.label }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Boutons -->
+        <div class="lg:col-span-3 flex justify-end gap-2">
+          <button mat-flat-button
+                  [color]="showAdvancedFilters ? 'accent' : 'primary'"
+                  (click)="toggleAdvancedFilters()"
+                  matTooltip="Filtres avancés"
+                  class="flex items-center gap-1 relative">
+            <mat-icon>{{ showAdvancedFilters ? 'expand_less' : 'tune' }}</mat-icon>
+            <span>Plus de filtres</span>
+            <span *ngIf="activeAdvancedCount > 0"
+              class="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[10px]
+                font-bold rounded-full w-5 h-5 flex items-center justify-center
+                border-2 border-white">
+              {{ activeAdvancedCount }}
+            </span>
+          </button>
+
+          <button mat-icon-button
+                  color="warn"
+                  (click)="clearFilters()"
+                  matTooltip="Effacer tous les filtres"
+                  [disabled]="!hasAnyFilter"
+                  class="bg-white border border-gray-200 shadow-sm">
+            <mat-icon>filter_alt_off</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- ════════ Filtres avancés ════════ -->
+      <div *ngIf="showAdvancedFilters"
+  class="mt-4 pt-5 border-t border-gray-200 animate-fade-in space-y-4">
+
+        <!-- Groupe : Profil candidat -->
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+            <mat-icon class="text-sm!">person</mat-icon> Profil candidat
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <mat-label>Niveau d'étude</mat-label>
+<mat-select [(ngModel)]="filterNiveauEtude" (selectionChange)="onFilterChange()"
+            [ngModelOptions]="{standalone: true}">                <mat-option value="">Tous niveaux</mat-option>
+                <mat-option *ngFor="let n of niveauxEtude" [value]="n">{{ n }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <mat-label>Statut professionnel</mat-label>
+<mat-select [(ngModel)]="filterCondidatStatutActuel" (selectionChange)="onFilterChange()"
+            [ngModelOptions]="{standalone: true}">                <mat-option value="">Tous</mat-option>
+                <mat-option *ngFor="let s of statutsActuels" [value]="s.value">{{ s.label }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+              <mat-label>Années d'expérience</mat-label>
+<mat-select [(ngModel)]="filterExperience" (selectionChange)="onFilterChange()"
+            [ngModelOptions]="{standalone: true}">                <mat-option value="">Toutes</mat-option>
+                <mat-option *ngFor="let e of experienceOptions" [value]="e">{{ e }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+          <!-- Pays de résidence -->
+<mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+  <mat-label>Pays de résidence</mat-label>
+  <input matInput [(ngModel)]="filterPaysResidence"
+    [value]="filterPaysResidence"
+    (input)="onTextFilterChange()"
+    placeholder="Ex: Tunisie">
+</mat-form-field>
+
+<!-- Fonction -->
+<mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+  <mat-label>Fonction</mat-label>
+  <input matInput [(ngModel)]="filterFonction"
+    [value]="filterFonction"
+    (input)="onTextFilterChange()"
+    placeholder="Ex: Technique">
+</mat-form-field>
+
+<!-- Poste souhaité -->
+<mat-form-field appearance="outline" class="w-full" subscriptSizing="dynamic">
+  <mat-label>Poste souhaité</mat-label>
+  <input matInput [(ngModel)]="filterPosteSouhaite"
+    [value]="filterPosteSouhaite"
+    (input)="onTextFilterChange()"
+    placeholder="Ex: Développeur">
+</mat-form-field>
+          </div>
+        </div>
+
+        <!-- Groupe : Critères administratifs (toggles) -->
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+            <mat-icon class="text-sm!">rule</mat-icon> Critères administratifs
+          </p>
+          <div class="flex flex-wrap gap-2">
+
+            <!-- Besoin visa -->
+            <div class="bg-white border border-gray-200 rounded-full px-3 py-1.5
+              flex items-center gap-2 text-sm">
+              <mat-icon class="text-gray-400 text-base!">badge</mat-icon>
+              <span class="text-gray-600">Visa</span>
+              <mat-button-toggle-group [(ngModel)]="filterBesoinVisa" (change)="onFilterChange()"
+                class="scale-90">
+                <mat-button-toggle [value]="null">—</mat-button-toggle>
+                <mat-button-toggle [value]="true">Oui</mat-button-toggle>
+                <mat-button-toggle [value]="false">Non</mat-button-toggle>
+              </mat-button-toggle-group>
+            </div>
+
+            <!-- Garant -->
+            <div class="bg-white border border-gray-200 rounded-full px-3 py-1.5
+              flex items-center gap-2 text-sm">
+              <mat-icon class="text-gray-400 text-base!">verified_user</mat-icon>
+              <span class="text-gray-600">Garant</span>
+              <mat-button-toggle-group [(ngModel)]="filterExistenceDeGarant" (change)="onFilterChange()"
+                class="scale-90">
+                <mat-button-toggle [value]="null">—</mat-button-toggle>
+                <mat-button-toggle [value]="true">Oui</mat-button-toggle>
+                <mat-button-toggle [value]="false">Non</mat-button-toggle>
+              </mat-button-toggle-group>
+            </div>
+
+            <!-- Hébergement -->
+            <div class="bg-white border border-gray-200 rounded-full px-3 py-1.5
+              flex items-center gap-2 text-sm">
+              <mat-icon class="text-gray-400 text-base!">home</mat-icon>
+              <span class="text-gray-600">Hébergement</span>
+              <mat-button-toggle-group [(ngModel)]="filterTypeHebergement" (change)="onFilterChange()"
+                class="scale-90">
+                <mat-button-toggle [value]="null">—</mat-button-toggle>
+                <mat-button-toggle [value]="true">Oui</mat-button-toggle>
+                <mat-button-toggle [value]="false">Non</mat-button-toggle>
+              </mat-button-toggle-group>
+            </div>
+
+            <!-- Préinscription -->
+            <div class="bg-white border border-gray-200 rounded-full px-3 py-1.5
+              flex items-center gap-2 text-sm">
+              <mat-icon class="text-gray-400 text-base!">how_to_reg</mat-icon>
+              <span class="text-gray-600">Préinscription</span>
+              <mat-button-toggle-group [(ngModel)]="filterPreinscription" (change)="onFilterChange()"
+                class="scale-90">
+                <mat-button-toggle [value]="null">—</mat-button-toggle>
+                <mat-button-toggle [value]="true">Oui</mat-button-toggle>
+                <mat-button-toggle [value]="false">Non</mat-button-toggle>
+              </mat-button-toggle-group>
+            </div>
+
+            <!-- Handicap -->
+            <div class="bg-white border border-gray-200 rounded-full px-3 py-1.5
+              flex items-center gap-2 text-sm">
+              <mat-icon class="text-gray-400 text-base!">accessible</mat-icon>
+              <span class="text-gray-600">Handicap</span>
+              <mat-button-toggle-group [(ngModel)]="filterHandicape" (change)="onFilterChange()"
+                class="scale-90">
+                <mat-button-toggle [value]="null">—</mat-button-toggle>
+                <mat-button-toggle [value]="true">Oui</mat-button-toggle>
+                <mat-button-toggle [value]="false">Non</mat-button-toggle>
+              </mat-button-toggle-group>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </mat-card-content>
   </mat-card>
@@ -41,7 +246,6 @@
       <div *ngIf="!loading" class="overflow-x-auto">
         <table mat-table [dataSource]="demandes" class="w-full">
 
-          <!-- UniqueId -->
           <ng-container matColumnDef="uniqueId">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">ID</th>
             <td mat-cell *matCellDef="let d">
@@ -49,9 +253,7 @@
             </td>
           </ng-container>
 
-          <!-- User -->
-          
-            <ng-container matColumnDef="user">
+          <ng-container matColumnDef="user">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">Candidat</th>
             <td mat-cell *matCellDef="let d">
               <span *ngIf="d.candidatNom || d.candidatPrenom" class="text-sm font-semibold text-gray-800 capitalize">
@@ -63,7 +265,6 @@
             </td>
           </ng-container>
 
-          <!-- Type -->
           <ng-container matColumnDef="type">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">Type</th>
             <td mat-cell *matCellDef="let d">
@@ -73,7 +274,6 @@
             </td>
           </ng-container>
 
-          <!-- Status -->
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">Statut</th>
             <td mat-cell *matCellDef="let d">
@@ -84,7 +284,6 @@
             </td>
           </ng-container>
 
-          <!-- Destination -->
           <ng-container matColumnDef="journeesDestination">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">Destination</th>
             <td mat-cell *matCellDef="let d">
@@ -92,7 +291,6 @@
             </td>
           </ng-container>
 
-          <!-- Niveau étude -->
           <ng-container matColumnDef="niveauEtude">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">Niveau</th>
             <td mat-cell *matCellDef="let d">
@@ -100,7 +298,6 @@
             </td>
           </ng-container>
 
-          <!-- Date -->
           <ng-container matColumnDef="createdAt">
             <th mat-header-cell *matHeaderCellDef class="font-semibold">Créé le</th>
             <td mat-cell *matCellDef="let d">
@@ -110,33 +307,29 @@
             </td>
           </ng-container>
 
-          <!-- Actions -->
           <ng-container matColumnDef="actions">
-  <th mat-header-cell *matHeaderCellDef class="font-semibold">Actions</th>
-  <td mat-cell *matCellDef="let d">
-    <div class="flex items-center gap-1">
-      <button mat-icon-button color="primary"
-        [routerLink]="['/demandes', d.id]" matTooltip="Voir détails">
-        <mat-icon>visibility</mat-icon>
-      </button>
-                <!-- Changer statut -->
-                <button mat-icon-button [matMenuTriggerFor]="statusMenu"
-        matTooltip="Changer statut">
-        <mat-icon>edit</mat-icon>
-      </button>
-      <mat-menu #statusMenu="matMenu">
-        <button mat-menu-item *ngFor="let s of statuts.slice(1)"
-          (click)="updateStatus(d.id, s.value)"> {{ s.label }}
-        </button>
-      </mat-menu>
-
+            <th mat-header-cell *matHeaderCellDef class="font-semibold">Actions</th>
+            <td mat-cell *matCellDef="let d">
+              <div class="flex items-center gap-1">
+                <button mat-icon-button color="primary"
+                  [routerLink]="['/demandes', d.id]" matTooltip="Voir détails">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button mat-icon-button [matMenuTriggerFor]="statusMenu" matTooltip="Changer statut">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <mat-menu #statusMenu="matMenu">
+                  <button mat-menu-item *ngFor="let s of statuts.slice(1)"
+                    (click)="updateStatus(d.id, s.value)"> {{ s.label }}
+                  </button>
+                </mat-menu>
                 <button mat-icon-button color="warn"
-        (click)="deleteDemande(d.id)" matTooltip="Supprimer">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </div>
-  </td>
-</ng-container>
+                  (click)="deleteDemande(d.id)" matTooltip="Supprimer">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"
@@ -151,12 +344,13 @@
         </table>
 
         <mat-paginator
-          [length]="total"
-          [pageSize]="limit"
-          [pageSizeOptions]="[5, 10, 25, 50]"
-          (page)="onPageChange($event)"
-          showFirstLastButtons>
-        </mat-paginator>
+  [length]="total"
+  [pageSize]="limit"
+  [pageIndex]="page"
+  [pageSizeOptions]="[5, 10, 25, 50]"
+  (page)="onPageChange($event)"
+  showFirstLastButtons>
+</mat-paginator>
       </div>
 
     </mat-card-content>

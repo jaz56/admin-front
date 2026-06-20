@@ -1,7 +1,34 @@
 <div class="p-6">
-  <button mat-stroked-button routerLink="/users" class="mb-6">
-    <mat-icon>arrow_back</mat-icon> Retour à la liste
-  </button>
+  <div class="flex items-center justify-between mb-6">
+    <button mat-stroked-button routerLink="/users">
+      <mat-icon>arrow_back</mat-icon> Retour à la liste
+    </button>
+    <div class="flex gap-2" *ngIf="!loading && user">
+      <button mat-stroked-button color="accent" (click)="createDemande()">
+        <mat-icon>note_add</mat-icon> Créer une demande
+      </button>
+      <button *ngIf="!editMode" mat-raised-button color="primary" (click)="toggleEditMode()">
+        <mat-icon>edit</mat-icon> Modifier
+      </button>
+      <ng-container *ngIf="editMode">
+        <button mat-stroked-button (click)="toggleEditMode()">
+          <mat-icon>close</mat-icon> Annuler
+        </button>
+        <button mat-raised-button color="primary" [disabled]="saving" (click)="saveChanges()">
+          <mat-spinner *ngIf="saving" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+          <mat-icon *ngIf="!saving">save</mat-icon>
+          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Bandeau édition -->
+  <div *ngIf="editMode"
+       class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700 text-sm">
+    <mat-icon class="text-amber-500">edit_note</mat-icon>
+    <span>Mode édition activé. Cliquez sur <strong>Enregistrer</strong> pour appliquer les modifications.</span>
+  </div>
 
   <div *ngIf="loading" class="flex justify-center py-10">
     <mat-spinner diameter="40"></mat-spinner>
@@ -9,124 +36,579 @@
 
   <div *ngIf="!loading && user" class="flex flex-col gap-6">
 
+    <!-- ═══ CARTE PROFIL ═══ -->
     <mat-card class="cardWithShadow">
       <mat-card-content class="flex flex-wrap items-center gap-6 p-6">
-        <img [src]="user.photoDeProfile || 'assets/images/profile/user-1.jpg'" 
-             alt="Photo de profil" 
-             class="w-24 h-24 rounded-full object-cover shadow-sm border border-gray-200">
-        
+
+        <!-- Photo -->
+        <div class="relative inline-block" style="z-index: 0;">
+          <img [src]="user.photoDeProfile || 'https://i.pravatar.cc/150?u=' + user.email"
+               alt="Photo de profil"
+               class="w-24 h-24 rounded-full object-cover shadow-sm border border-gray-200 block"
+               (error)="onImageError($event)">
+          <label *ngIf="editMode"
+                 class="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 cursor-pointer shadow-md transition-colors flex items-center justify-center w-7 h-7"
+                 style="z-index: 10;">
+            <mat-icon *ngIf="!uploading['photo']" style="font-size:16px;width:16px;height:16px;line-height:16px;">photo_camera</mat-icon>
+            <mat-spinner *ngIf="uploading['photo']" diameter="14"></mat-spinner>
+            <input type="file" accept="image/*" class="hidden" (change)="onFileSelected($event, 'photo')">
+          </label>
+        </div>
+
         <div class="flex-1 min-w-[250px]">
           <h1 class="text-3xl font-bold text-gray-800 mb-1 capitalize">{{ user.prenom }} {{ user.nom }}</h1>
-          <p class="text-gray-500 font-mono text-sm mb-2">ID Système : {{ user.id }}</p>
-          
-          <div class="flex flex-wrap gap-2">
-            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full uppercase">
-              ID Unique: {{ user.uniqueId || 'Non généré' }}
+          <p class="text-gray-500 font-mono text-sm mb-1">ID : {{ user.id }}</p>
+          <p class="text-gray-400 font-mono text-xs mb-2">UniqueID : {{ user.uniqueId || 'Non généré' }}</p>
+
+          <div class="flex flex-wrap gap-2 mb-2">
+           <span class="px-3 py-1 text-xs font-semibold rounded-full"
+      [ngClass]="getStatutColor(user.candidateVerificationStatus)">
+  {{ getStatutLabel(user.candidateVerificationStatus) }}
+</span>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">{{ user.role }}</span>
+            <span class="px-2 py-1 text-xs rounded-full"
+                  [ngClass]="user.verifiedEmail ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'">
+              {{ user.verifiedEmail ? '✓ Email vérifié' : 'Email non vérifié' }}
             </span>
-            <span class="px-3 py-1 text-xs font-semibold rounded-full uppercase"
-                  [ngClass]="{
-                    'bg-yellow-100 text-yellow-800': user.candidateVerificationStatus === 'pending',
-                    'bg-green-100 text-green-800': user.candidateVerificationStatus === 'verified',
-                    'bg-red-100 text-red-800': user.candidateVerificationStatus === 'rejected'
-                  }">
-              Statut : {{ user.candidateVerificationStatus || 'En attente' }}
-            </span>
+           <span class="px-2 py-1 text-xs rounded-full bg-indigo-50 text-indigo-600 flex items-center gap-1">
+  <mat-icon style="font-size:14px;width:14px;height:14px;">
+    {{ getProgressInfo(user.progress).icon }}
+  </mat-icon>
+  {{ getProgressInfo(user.progress).label }}
+</span>
           </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-400">Profil complété :</span>
+            <div class="flex-1 max-w-[200px] h-2 bg-gray-200 rounded-full">
+              <div class="h-2 rounded-full"
+                   [style.width.%]="user.profileCompletionPercentage || 0"
+                   [ngClass]="{
+                     'bg-green-500': (user.profileCompletionPercentage || 0) >= 70,
+                     'bg-yellow-500': (user.profileCompletionPercentage || 0) >= 30 && (user.profileCompletionPercentage || 0) < 70,
+                     'bg-red-400': (user.profileCompletionPercentage || 0) < 30
+                   }"></div>
+            </div>
+            <span class="text-xs font-semibold text-gray-600">{{ user.profileCompletionPercentage || 0 }}%</span>
+          </div>
+
+          <!-- Sélects statut/rôle en mode édition -->
+          <form *ngIf="editMode" [formGroup]="editForm">
+            <div class="flex flex-wrap gap-3 mt-3">
+              <mat-form-field appearance="outline" style="width:160px">
+                <mat-label>Statut</mat-label>
+                <mat-select formControlName="candidateVerificationStatus">
+  <mat-option *ngFor="let s of statutOptions" [value]="s.value">
+    <div class="flex items-center gap-2">
+      <mat-icon style="font-size:14px;width:14px;height:14px;">{{ s.icon }}</mat-icon>
+      {{ s.label }}
+    </div>
+  </mat-option>
+</mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" style="width:150px">
+                <mat-label>Rôle</mat-label>
+                <mat-select formControlName="role">
+  <mat-option *ngFor="let r of dynamicRoles" [value]="r.value">
+    {{ r.label }}
+  </mat-option>
+</mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" style="width:180px">
+                <mat-label>Email vérifié</mat-label>
+                <mat-select formControlName="verifiedEmail">
+                  <mat-option [value]="true">Oui</mat-option>
+                  <mat-option [value]="false">Non</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </form>
         </div>
       </mat-card-content>
     </mat-card>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      
+
+      <!-- ═══ INFORMATIONS PERSONNELLES ═══ -->
       <mat-card class="cardWithShadow">
         <mat-card-header class="mb-3">
-          <mat-card-title class="text-lg font-semibold text-gray-700">Informations Personnelles</mat-card-title>
+          <mat-card-title class="text-lg font-semibold text-gray-700">
+            <mat-icon class="align-middle mr-1 text-blue-500">person</mat-icon>
+            Informations Personnelles
+          </mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <ul class="space-y-3 text-sm text-gray-600">
-            <li><strong>Email :</strong> <a href="mailto:{{ user.email }}" class="text-blue-600 hover:underline">{{ user.email }}</a></li>
+
+          <ul *ngIf="!editMode" class="space-y-3 text-sm text-gray-600">
+            <li><strong>Nom complet :</strong> {{ user.prenom }} {{ user.nom }}</li>
+            <li><strong>Email :</strong>
+              <a href="mailto:{{ user.email }}" class="text-blue-600 hover:underline">{{ user.email }}</a>
+            </li>
             <li><strong>Téléphone :</strong> {{ user.numeroTel || 'Non renseigné' }}</li>
-            <li><strong>Sexe :</strong> {{ user.sexe === 'H' ? 'Homme' : (user.sexe === 'F' ? 'Femme' : 'Non spécifié') }}</li>
-            <li><strong>Date de naissance :</strong> {{( user.dateDeNaissance | date:'dd/MM/yyyy' )|| 'Non renseignée' }}</li>
-            <li><strong>Pays d'origine :</strong> {{ user.pays?.label || 'Non renseigné' }}</li>
-            <li><strong>Adresse postale :</strong> {{ user.address || 'Non renseignée' }} (CP: {{ user.codePostal || 'N/A' }})</li>
+            <li><strong>Sexe :</strong>
+              {{ user.sexe === 'H' ? 'Homme' : user.sexe === 'F' ? 'Femme' : 'Non spécifié' }}
+            </li>
+            <li><strong>Date de naissance :</strong>
+              {{ (user.dateDeNaissance | date:'dd/MM/yyyy') || 'Non renseignée' }}
+            </li>
+            <li><strong>Nationalité :</strong>
+              <ng-container *ngIf="user.nationalite?.length > 0">{{ user.nationalite.join(', ') }}</ng-container>
+              <span *ngIf="!user.nationalite?.length" class="text-gray-400">Non renseignée</span>
+            </li>
+            <li><strong>Pays :</strong> {{ user.pays?.label || 'Non renseigné' }}</li>
+            <li><strong>Adresse :</strong> {{ user.address || '—' }}</li>
+            <li><strong>Code postal :</strong> {{ user.codePostal || '—' }}</li>
+            <li><strong>Pièce d'identité :</strong> {{ user.pieceIdentite || 'Non renseignée' }}</li>
           </ul>
+
+          <form *ngIf="editMode" [formGroup]="editForm" class="flex flex-col gap-3">
+            <div class="grid grid-cols-2 gap-3">
+              <mat-form-field appearance="outline">
+                <mat-label>Prénom</mat-label>
+                <input matInput formControlName="prenom">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Nom</mat-label>
+                <input matInput formControlName="nom">
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <mat-icon matPrefix class="mr-1">email</mat-icon>
+              <input matInput formControlName="email" type="email">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Téléphone</mat-label>
+              <mat-icon matPrefix class="mr-1">phone</mat-icon>
+              <input matInput formControlName="numeroTel">
+            </mat-form-field>
+            <div class="grid grid-cols-2 gap-3">
+  <mat-form-field appearance="outline">
+    <mat-label>Sexe</mat-label>
+    <mat-select formControlName="sexe">
+      <mat-option value="H">Homme</mat-option>
+      <mat-option value="F">Femme</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Date picker Material -->
+  <mat-form-field appearance="outline">
+    <mat-label>Date de naissance</mat-label>
+    <input matInput
+           [matDatepicker]="picker"
+           formControlName="dateDeNaissance"
+           placeholder="JJ/MM/AAAA"
+           readonly>
+    <mat-datepicker-toggle matIconSuffix [for]="picker">
+      <mat-icon matDatepickerToggleIcon>calendar_month</mat-icon>
+    </mat-datepicker-toggle>
+    <mat-datepicker #picker
+                    startView="multi-year"
+                    [startAt]="startDate">
+    </mat-datepicker>
+  </mat-form-field>
+</div>
+
+            <!-- Nationalité — FormControl indépendant (tableau de strings) -->
+            <mat-form-field appearance="outline">
+              <mat-label>Nationalité (séparées par virgule)</mat-label>
+              <mat-icon matPrefix class="mr-1">flag</mat-icon>
+              <input matInput [formControl]="nationaliteControl"
+                     placeholder="Ex: Tunisienne, Française">
+            </mat-form-field>
+
+           <!-- Pays avec recherche -->
+<div style="position:relative;">
+
+  <!-- Champ de recherche visible seulement quand le panel est ouvert -->
+  <mat-form-field appearance="outline" class="w-full">
+    <mat-label>Pays</mat-label>
+    <mat-icon matPrefix style="color:#9ca3af;margin-right:4px;">public</mat-icon>
+    <mat-select formControlName="paysValue"
+                (selectionChange)="onPaysChange($event.value)"
+                (opened)="onPaysSelectOpened()"
+                (closed)="onPaysSelectClosed()">
+
+      <!-- Barre de recherche — pas dans mat-option, dans ng-template -->
+      <mat-select-trigger>
+        {{ getSelectedPaysLabel() }}
+      </mat-select-trigger>
+
+      <!-- Pseudo-option non sélectionnable qui contient l'input -->
+      <div style="padding:8px 12px; position:sticky; top:0; background:white;
+                  z-index:100; border-bottom:1px solid #e5e7eb; display:flex;
+                  align-items:center; gap:8px;"
+           (click)="$event.stopPropagation()"
+           (keydown)="$event.stopPropagation()">
+        <mat-icon style="color:#9ca3af;font-size:18px;width:18px;height:18px;flex-shrink:0;">
+          search
+        </mat-icon>
+        <input #paysSearchInput
+               type="text"
+               [(ngModel)]="paysSearchText"
+               [ngModelOptions]="{standalone: true}"
+               (input)="onPaysSearch()"
+               placeholder="Rechercher un pays..."
+               style="border:none;outline:none;width:100%;font-size:13px;
+                      background:transparent;color:#1f2937;"/>
+        <button *ngIf="paysSearchText"
+                type="button"
+                (click)="clearPaysSearch()"
+                style="background:none;border:none;cursor:pointer;padding:2px;
+                       color:#9ca3af;display:flex;align-items:center;flex-shrink:0;">
+          <mat-icon style="font-size:15px;width:15px;height:15px;">close</mat-icon>
+        </button>
+      </div>
+
+      <mat-option value="">— Non défini —</mat-option>
+
+      <mat-option *ngFor="let p of filteredPaysOptions" [value]="p.value">
+        {{ p.label }}
+      </mat-option>
+
+      <mat-option *ngIf="filteredPaysOptions.length === 0 && paysSearchText" disabled>
+        <span style="color:#9ca3af;font-style:italic;font-size:13px;">
+          Aucun pays trouvé pour "{{ paysSearchText }}"
+        </span>
+      </mat-option>
+
+    </mat-select>
+  </mat-form-field>
+</div>
+            <div class="grid grid-cols-2 gap-3">
+              <mat-form-field appearance="outline">
+                <mat-label>Adresse</mat-label>
+                <input matInput formControlName="address">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Code postal</mat-label>
+                <input matInput formControlName="codePostal">
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>N° Pièce d'identité</mat-label>
+              <input matInput formControlName="pieceIdentite">
+            </mat-form-field>
+          </form>
+
         </mat-card-content>
       </mat-card>
 
+      <!-- ═══ PROFIL PROFESSIONNEL ═══ -->
       <mat-card class="cardWithShadow">
         <mat-card-header class="mb-3">
-          <mat-card-title class="text-lg font-semibold text-gray-700">Profil Professionnel & Suivi</mat-card-title>
+          <mat-card-title class="text-lg font-semibold text-gray-700">
+            <mat-icon class="align-middle mr-1 text-blue-500">work</mat-icon>
+            Profil Professionnel
+          </mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <ul class="space-y-3 text-sm text-gray-600 mb-4">
-            <li><strong>Dernier poste occupé :</strong> <span class="capitalize font-medium text-gray-800">{{ user.dernierePosteOccupe || 'Non renseigné' }}</span></li>
-            <li><strong>Fonction ciblée :</strong> <span class="capitalize font-medium text-gray-800">{{ user.fonction || 'Non renseignée' }}</span></li>
-            <li><strong>Intéressé par :</strong> {{ user.interessesPar?.join(', ') || 'Non spécifié' }}</li>
-            <li><strong>Langue sélectionnée :</strong> <span class="capitalize">{{ user.langueDeProcedure || 'Français' }}</span></li>
-            <li><strong>Étape d'inscription :</strong> <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs">{{ user.progress }}</span></li>
+
+          <ul *ngIf="!editMode" class="space-y-3 text-sm text-gray-600">
+            <li><strong>Dernier poste :</strong> {{ user.dernierePosteOccupe || '—' }}</li>
+            <li><strong>Fonction :</strong> {{ getFonctionLabel(user.fonction) }}</li>
+            <li><strong>Langue de procédure :</strong> {{ getLangueLabel(user.langueDeProcedure) }}</li>
+            <li>
+              <strong>Intéressé par :</strong>
+              <span *ngIf="user.interessesPar?.length > 0" class="flex flex-wrap gap-1 mt-1">
+                <span *ngFor="let item of user.interessesPar"
+                      class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
+                  {{ item }}
+                </span>
+              </span>
+              <span *ngIf="!user.interessesPar?.length" class="text-gray-400">—</span>
+            </li>
+            <li>
+  <strong>Jobs favoris :</strong>
+  <span *ngIf="user.favoriteJobs?.length > 0" class="flex flex-wrap gap-1 mt-1">
+    <span *ngFor="let job of user.favoriteJobs"
+          class="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs rounded-full">
+      {{ job }}
+    </span>
+  </span>
+  <span *ngIf="!user.favoriteJobs?.length" class="text-gray-400">—</span>
+</li>
+           <li class="!list-none -mx-1">
+  <strong class="block mb-3 ml-1">Progression d'inscription :</strong>
+
+  <!-- CAS 1 : progress absent -->
+  <ng-container *ngIf="!user.progress">
+    <div class="flex items-center gap-3 px-3 py-3 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
+      <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+        <mat-icon style="font-size:16px;width:16px;height:16px;color:#9ca3af">help_outline</mat-icon>
+      </div>
+      <div class="flex-1">
+        <span class="text-sm text-gray-500 block">Aucune étape définie</span>
+        <span class="text-xs text-gray-400">
+          Cet utilisateur a été créé manuellement ou n'a pas encore commencé l'inscription.
+        </span>
+      </div>
+      <button mat-stroked-button (click)="toggleEditMode()" class="text-xs">
+        <mat-icon>edit</mat-icon> Définir
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- CAS 2 : progress présent → stepper -->
+  <ng-container *ngIf="user.progress">
+    <div class="flex items-center gap-2 mb-4 px-1">
+      <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div class="h-2 bg-indigo-500 rounded-full transition-all duration-500"
+             [style.width.%]="progressPercentage"></div>
+      </div>
+      <span class="text-xs font-bold text-indigo-600 whitespace-nowrap">
+        {{ progressPercentage }}%
+      </span>
+    </div>
+
+<div class="flex flex-col gap-2">
+  <div *ngFor="let step of progressSteps; let i = index"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all"
+       [ngClass]="{
+         'bg-indigo-50 border border-indigo-200': step.value === user.progress,
+         'bg-green-50':  i < getProgressInfo(user.progress).index,
+         'bg-gray-50':   i > getProgressInfo(user.progress).index
+       }">
+
+    <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+         [ngClass]="{
+           'bg-indigo-600 text-white': step.value === user.progress,
+           'bg-green-500 text-white':  i < getProgressInfo(user.progress).index,
+           'bg-gray-200 text-gray-400': i > getProgressInfo(user.progress).index
+         }">
+      <mat-icon style="font-size:14px;width:14px;height:14px;line-height:14px;">
+        {{ i < getProgressInfo(user.progress).index ? 'check' : (step.icon || 'flag') }}
+      </mat-icon>
+    </div>
+
+    <div class="flex-1 min-w-0">
+      <span class="text-xs font-semibold block"
+            [ngClass]="{
+              'text-indigo-700': step.value === user.progress,
+              'text-green-700':  i < getProgressInfo(user.progress).index,
+              'text-gray-400':   i > getProgressInfo(user.progress).index
+            }">
+        {{ step.label }}
+      </span>
+    </div>
+
+    <span *ngIf="step.value === user.progress"
+          class="text-[10px] font-bold bg-indigo-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">
+      En cours
+    </span>
+    <mat-icon *ngIf="i < getProgressInfo(user.progress).index"
+              class="text-green-500" style="font-size:16px;width:16px;height:16px;">
+      verified
+    </mat-icon>
+  </div>
+</div>
+  </ng-container>
+</li>
           </ul>
-          
+
+<form *ngIf="editMode" [formGroup]="editForm" class="flex flex-col gap-3">
+  <mat-form-field appearance="outline">
+    <mat-label>Dernier poste occupé</mat-label>
+    <mat-icon matPrefix class="mr-1">work_history</mat-icon>
+    <input matInput formControlName="dernierePosteOccupe">
+  </mat-form-field>
+  <mat-form-field appearance="outline">
+    <mat-label>Fonction</mat-label>
+   <mat-select formControlName="fonction">
+  <mat-option value="">— Non définie —</mat-option>
+  <mat-option *ngFor="let f of fonctionOptions" [value]="f.value">
+    <div class="flex items-center gap-2">
+      <mat-icon style="font-size:14px;width:14px;height:14px;">{{ f.icon }}</mat-icon>
+      {{ f.label }}
+    </div>
+  </mat-option>
+</mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="outline">
+    <mat-label>Langue de procédure</mat-label>
+    <mat-select formControlName="langueDeProcedure">
+      <mat-option value="french">Français</mat-option>
+      <mat-option value="arabic">Arabe</mat-option>
+      <mat-option value="english">Anglais</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- interessesPar -->
+  <mat-form-field appearance="outline">
+    <mat-label>Intéressé par (séparées par virgule)</mat-label>
+    <mat-icon matPrefix class="mr-1">interests</mat-icon>
+    <input matInput [formControl]="interessesParControl"
+           placeholder="Ex: travails, informatique">
+    <mat-hint>Séparez les valeurs par des virgules</mat-hint>
+  </mat-form-field>
+<!-- favoriteJobs — FormControl indépendant -->
+<mat-form-field appearance="outline">
+  <mat-label>Jobs favoris (séparés par virgule)</mat-label>
+  <mat-icon matPrefix class="mr-1">favorite</mat-icon>
+  <input matInput [formControl]="favoriteJobsControl"
+         placeholder="Ex: Développeur, Data Analyst">
+  <mat-hint>Séparez les valeurs par des virgules</mat-hint>
+</mat-form-field>
+  <!-- ← progress ajouté ici dans le bon form -->
+  <mat-form-field appearance="outline">
+    <mat-label>Étape d'inscription</mat-label>
+    <mat-icon matPrefix class="mr-1">flag</mat-icon>
+    <mat-select formControlName="progress">
+  <mat-option value="">— Non définie —</mat-option>
+  <mat-option *ngFor="let step of progressSteps" [value]="step.value">
+    <div class="flex items-center gap-2">
+      <mat-icon style="font-size:14px;width:14px;height:14px;">{{ step.icon }}</mat-icon>
+      {{ step.label }}
+    </div>
+  </mat-option>
+</mat-select>
+    <mat-hint>Définit manuellement l'étape d'inscription du candidat</mat-hint>
+  </mat-form-field>
+</form>
+
           <hr class="my-4 border-gray-100">
-          
-          <div class="flex gap-4">
+
+          <!-- Solde & Cashback -->
+          <div class="flex gap-4 mb-3">
             <div class="bg-gray-50 p-3 rounded-lg flex-1 border border-gray-200">
-              <span class="block text-gray-500 text-xs uppercase font-medium">Solde Compte</span>
-              <strong class="text-lg text-gray-800">{{ user.balance || 0 }} DT</strong>
+              <span class="block text-gray-500 text-xs uppercase font-medium">Solde</span>
+              <strong *ngIf="!editMode" class="text-lg text-gray-800">{{ user.balance || 0 }} DT</strong>
+              <!-- formControlName dans un form [formGroup] → pas de [formControl] -->
+              <form *ngIf="editMode" [formGroup]="editForm">
+                <mat-form-field appearance="outline" class="w-full mt-1" subscriptSizing="dynamic">
+                  <input matInput type="number" formControlName="balance">
+                </mat-form-field>
+              </form>
             </div>
             <div class="bg-gray-50 p-3 rounded-lg flex-1 border border-gray-200">
               <span class="block text-gray-500 text-xs uppercase font-medium">Cashback</span>
-              <strong class="text-lg text-gray-800">{{ user.cashback || 0 }} DT</strong>
+              <strong *ngIf="!editMode" class="text-lg text-gray-800">{{ user.cashback || 0 }} DT</strong>
+              <form *ngIf="editMode" [formGroup]="editForm">
+                <mat-form-field appearance="outline" class="w-full mt-1" subscriptSizing="dynamic">
+                  <input matInput type="number" formControlName="cashback">
+                </mat-form-field>
+              </form>
             </div>
           </div>
+
         </mat-card-content>
       </mat-card>
     </div>
 
+    <!-- ═══ DOCUMENTS ═══ -->
     <mat-card class="cardWithShadow">
       <mat-card-header class="mb-4">
-        <mat-card-title class="text-lg font-semibold text-gray-700">Documents d'identité & Justificatifs</mat-card-title>
+        <mat-card-title class="text-lg font-semibold text-gray-700">
+          <mat-icon class="align-middle mr-1 text-blue-500">badge</mat-icon>
+          Documents d'identité & Justificatifs
+        </mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
+          <!-- CIN -->
           <div>
-            <h4 class="font-medium text-sm text-gray-700 mb-3 flex items-center gap-2">
-              <mat-icon class="text-gray-500">badge</mat-icon> 
-              Cartes d'Identité Nationales (Numéro : {{ user.pieceIdentite || 'Non renseigné' }})
+            <h4 class="font-medium text-sm text-gray-700 mb-3">
+              CIN (N° : {{ user.pieceIdentite || 'Non renseigné' }})
             </h4>
             <div class="flex gap-4">
               <div class="flex-1">
                 <span class="text-xs text-gray-500 block mb-1 font-medium">Recto</span>
-                <img *ngIf="user.cinRecto" [src]="user.cinRecto" alt="CIN Recto" class="w-full h-36 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform cursor-zoom-in">
-                <div *ngIf="!user.cinRecto" class="w-full h-36 bg-gray-50 flex items-center justify-center text-gray-400 text-xs border border-dashed rounded-lg">Absent</div>
+                <div class="relative">
+                  <img *ngIf="user.cinRecto" [src]="user.cinRecto" alt="CIN Recto"
+                       class="w-full h-36 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform cursor-zoom-in">
+                  <div *ngIf="!user.cinRecto"
+                       class="w-full h-36 bg-gray-50 flex items-center justify-center text-gray-400 text-xs border border-dashed rounded-lg">
+                    Absent
+                  </div>
+                  <label *ngIf="editMode"
+                         class="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 cursor-pointer shadow-md flex items-center justify-center w-8 h-8">
+                    <mat-icon *ngIf="!uploading['cinRecto']" style="font-size:16px;width:16px;height:16px;">upload</mat-icon>
+                    <mat-spinner *ngIf="uploading['cinRecto']" diameter="16"></mat-spinner>
+                    <input type="file" accept="image/*" class="hidden" (change)="onFileSelected($event, 'cinRecto')">
+                  </label>
+                </div>
               </div>
               <div class="flex-1">
                 <span class="text-xs text-gray-500 block mb-1 font-medium">Verso</span>
-                <img *ngIf="user.cinVerso" [src]="user.cinVerso" alt="CIN Verso" class="w-full h-36 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform cursor-zoom-in">
-                <div *ngIf="!user.cinVerso" class="w-full h-36 bg-gray-50 flex items-center justify-center text-gray-400 text-xs border border-dashed rounded-lg">Absent</div>
+                <div class="relative">
+                  <img *ngIf="user.cinVerso" [src]="user.cinVerso" alt="CIN Verso"
+                       class="w-full h-36 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform cursor-zoom-in">
+                  <div *ngIf="!user.cinVerso"
+                       class="w-full h-36 bg-gray-50 flex items-center justify-center text-gray-400 text-xs border border-dashed rounded-lg">
+                    Absent
+                  </div>
+                  <label *ngIf="editMode"
+                         class="absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 cursor-pointer shadow-md flex items-center justify-center w-8 h-8">
+                    <mat-icon *ngIf="!uploading['cinVerso']" style="font-size:16px;width:16px;height:16px;">upload</mat-icon>
+                    <mat-spinner *ngIf="uploading['cinVerso']" diameter="16"></mat-spinner>
+                    <input type="file" accept="image/*" class="hidden" (change)="onFileSelected($event, 'cinVerso')">
+                  </label>
+                </div>
               </div>
             </div>
           </div>
 
-          <div>
-            <h4 class="font-medium text-sm text-gray-700 mb-3 flex items-center gap-2">
-              <mat-icon class="text-gray-500">audiotrack</mat-icon> Échantillon Vocal de Présentation
-            </h4>
-            
-            <div class="pt-5">
-              <div *ngIf="user.vocal" class="bg-slate-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center h-36">
-                <mat-icon class="text-blue-500 text-3xl mb-2">mic</mat-icon>
-                <audio controls class="w-full max-w-[280px]">
-                  <source [src]="user.vocal" type="audio/wav">
-                  Votre navigateur ne prend pas en charge l'écoute audio.
-                </audio>
-              </div>
-              <div *ngIf="!user.vocal" class="bg-gray-50 h-36 rounded-lg border border-dashed flex items-center justify-center text-gray-400 text-sm">
-                Aucune piste vocale déposée par le candidat.
-              </div>
-            </div>
-          </div>
+          <!-- VOCAL -->
+          <!-- VOCAL -->
+<div>
+  <h4 class="font-medium text-sm text-gray-700 mb-3">
+    <mat-icon class="align-middle text-gray-500">audiotrack</mat-icon>
+    Échantillon Vocal
+  </h4>
+  <div class="pt-5">
+    
+    <!-- CONTENEUR GLOBAL -->
+    <div class="bg-slate-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center justify-center h-44 relative">
+      
+      <!-- Affichage du lecteur si un vocal existe ET qu'on n'est pas en train d'enregistrer -->
+      <ng-container *ngIf="user.vocal && !isRecording">
+        <mat-icon class="text-blue-500 text-3xl mb-1">mic</mat-icon>
+        <audio controls class="w-full max-w-[280px] mb-2" [src]="user.vocal">
+          Votre navigateur ne prend pas en charge l'audio.
+        </audio>
+      </ng-container>
+
+      <!-- Message si aucun vocal n'existe ET qu'on n'enregistre pas -->
+      <ng-container *ngIf="!user.vocal && !isRecording">
+        <span class="text-gray-400 text-sm mb-2">Aucune piste vocale enregistrée.</span>
+      </ng-container>
+
+      <!-- Interface d'enregistrement en direct (s'active lors du clic sur le micro) -->
+      <div *ngIf="isRecording" class="flex flex-col items-center gap-2 animate-pulse">
+        <mat-icon class="text-red-500 text-4xl">fiber_manual_record</mat-icon>
+        <span class="text-xs font-mono text-red-600 bg-red-50 px-2 py-0.5 rounded">Enregistrement : {{ recordingDuration }}s</span>
+      </div>
+
+      <!-- Spinner de chargement pendant l'upload -->
+      <div *ngIf="uploading['vocal']" class="absolute inset-0 bg-white/70 flex flex-col items-center justify-center gap-2 rounded-lg z-10">
+        <mat-spinner diameter="30"></mat-spinner>
+        <span class="text-xs text-gray-500 font-medium">Téléversement du vocal...</span>
+      </div>
+
+      <!-- BOUTONS D'ACTIONS (Uniquement visibles en mode édition) -->
+      <div *ngIf="editMode && !uploading['vocal']" class="absolute top-2 right-2 flex gap-1.5">
+        
+        <!-- Option 1 : Importer un fichier -->
+        <label class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 cursor-pointer shadow-md flex items-center justify-center w-8 h-8" 
+               matTooltip="Importer un fichier audio">
+          <mat-icon style="font-size:16px;width:16px;height:16px;">upload</mat-icon>
+          <input type="file" accept="audio/*" class="hidden" (change)="onFileSelected($event, 'vocal')">
+        </label>
+
+        <!-- Option 2 : Enregistrer en direct (Démarrer / Arrêter) -->
+        <button type="button"
+                [class]="isRecording ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-800'"
+                class="text-white rounded-full shadow-md flex items-center justify-center w-8 h-8 transition-colors"
+                (click)="toggleRecording()"
+                [matTooltip]="isRecording ? 'Arrêter et sauvegarder' : 'Enregistrer un vocal en direct'">
+          <mat-icon style="font-size:16px;width:16px;height:16px;">{{ isRecording ? 'stop' : 'keyboard_voice' }}</mat-icon>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
         </div>
       </mat-card-content>
@@ -135,6 +617,6 @@
   </div>
 
   <div *ngIf="!loading && !user" class="text-center py-10 text-red-500 font-medium">
-    <mat-icon class="align-middle mr-2">error</mat-icon> Impossible de charger les détails de ce candidat.
+    <mat-icon class="align-middle mr-2">error</mat-icon> Impossible de charger ce candidat.
   </div>
 </div>

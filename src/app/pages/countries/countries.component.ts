@@ -57,7 +57,7 @@ export class CountriesComponent implements OnInit {
 
   toggleActive(country: Country): void {
     this.countryService
-      .toggleActive(country._id, !country.isActive)
+      .toggleActive(country.id, !country.isActive)
       .subscribe({
         next: () => this.loadCountries(),
       });
